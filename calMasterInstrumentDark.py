@@ -71,7 +71,7 @@ def masterInstrumentDark(data, writeToFile=False, path=None, sequenceName=None,
   return averagedDark
 
 
-a=cnH2rgRamps("data/instrumentDark/simInstrumentDark*",readMode="SLOW",subArray=None,verbose=True)
-data=a.read()
-b= masterInstrumentDark(data, writeToFile=True, path='data/instrumentDark/',
-                        sequenceName='masterInstrumentDark', fileFormat='arr')
+#a=cnH2rgRamps("data/instrumentDark/simInstrumentDark*",readMode="SLOW",subArray=None,verbose=True)
+#data=a.read()
+#b= masterInstrumentDark(data, writeToFile=True, path='data/instrumentDark/',
+#                        sequenceName='masterInstrumentDark', fileFormat='arr')
