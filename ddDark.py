@@ -13,6 +13,8 @@ from cnPipeline import *
 def dark(data,
          instrumentDark,
          backgroundDark):
+  
+  #TODO: remove instrument dark subtraction and make sure background is linearity corrected
   """
   Returns the instrument and background dark subtracted ramp of the CryoNIRSP H2RG.
   
@@ -22,10 +24,10 @@ def dark(data,
         3D data cube that needs to be dark corrected.
     instrumentDark : (#NDRs, 2048, 2048) ndarray, float32
         3D data cube that contains the instrument dark ramp with the exact same
-        camera setup as the data cube.
+        camera setup as the data cube. Has to be linearity corrected.
     backgroundDark : (#NDRs, 2048, 2048) ndarray, float32
         3D data cube that contains the background dark rampwith the exact same
-        camera setup as the data cube.
+        camera setup as the data cube. Has to be linearity corrected.
 
     Returns
     -------
@@ -55,8 +57,7 @@ def dark(data,
    """
   
   #TODO: check input type, binary vs ndarray.
-  
-  #TODO: create simulated data set.
+
   
   #TODO: Should we implement a check for exposure time, camera mode or is the
   #      check for the right calibration data instrumentDark and backgroundDark
