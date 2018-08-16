@@ -3,14 +3,24 @@
 """
 Created on %(date)s
 
-@author: %(Andre Fehlmann)s
+@author: Andre Fehlmann (afehlmann@nso.edu)
+
+Revision history
+----------------
+15 August 2018:
+    Removed instrument dark subtractiona as we only use background dark stand
+    alone and thus the instrument dark has to be contained. Andre
+    
 """
 import numpy as np
 from astropy.io import fits
 from cnPipeline import *
 
-def masterBackgroundDark(data, masterInstrumentDark, writeToFile=False, path=None,
-                      sequenceName=None, fileFormat='fits'):
+def masterBackgroundDark(data,
+                         writeToFile=False,
+                         path=None,
+                         sequenceName=None,
+                         fileFormat='fits'):
   
   """
   Returns the averaged background dark ramp of the CryoNIRSP H2RG.
@@ -35,9 +45,7 @@ def masterBackgroundDark(data, masterInstrumentDark, writeToFile=False, path=Non
 
     Raises
     ------
-    AssertationError
-        If the shapes of the input arrays do not match.
-
+    
     Notes
     -----
     
@@ -60,15 +68,9 @@ def masterBackgroundDark(data, masterInstrumentDark, writeToFile=False, path=Non
   
   #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
   
-  # make sure the data cubes have the same dimensions
-  assert(data[0,:,:,:].shape  == masterInstrumentDark.shape),\
-  'input array dimensions do not match'
-  
-  # first we need to subtract the master instrument Dark
-  tempData = data - masterInstrumentDark
   
   #print('mean variance and std of variance', np.mean(np.var(data,axis=0)),np.std(np.var(data,axis=0)))
-  averagedDark = np.average(tempData, axis=0)
+  averagedDark = np.average(data, axis=0)
   
   # for test purposes lets write the files to fits
   if writeToFile:

@@ -4,14 +4,19 @@
 Created on Tue Aug  7 12:07:17 2018
 
 @author: Andre Fehlmann (afehlmann@nso.edu)
+
+Revision history
+----------------
+15 August 2018:
+    Removed instrument dark as it is contained in the background dark already.
+    Andre
 """
 
 import numpy as np
 import matplotlib.pyplot as plt
 from cnPipeline import *
 
-def dark(data,
-         instrumentDark,
+def dark(data,,
          backgroundDark):
   
   #TODO: remove instrument dark subtraction and make sure background is linearity corrected
@@ -22,9 +27,6 @@ def dark(data,
     ----------
     data : (#NDRs, 2048, 2048) ndarray, uint16
         3D data cube that needs to be dark corrected.
-    instrumentDark : (#NDRs, 2048, 2048) ndarray, float32
-        3D data cube that contains the instrument dark ramp with the exact same
-        camera setup as the data cube. Has to be linearity corrected.
     backgroundDark : (#NDRs, 2048, 2048) ndarray, float32
         3D data cube that contains the background dark rampwith the exact same
         camera setup as the data cube. Has to be linearity corrected.
@@ -65,7 +67,7 @@ def dark(data,
   
   
   # make sure the data cubes have the same dimensions
-  assert(data.shape == instrumentDark.shape == backgroundDark.shape),\
+  assert(data.shape == backgroundDark.shape),\
   'input array dimensions do not match'
   
   #TODO: Do we need to check for data types and convert to float32?
@@ -75,7 +77,7 @@ def dark(data,
     
   
   # subtract the data
-  darkSubtracted = data-instrumentDark-backgroundDark
+  darkSubtracted = data-backgroundDark
   
   return darkSubtracted
 
