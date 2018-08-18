@@ -61,7 +61,7 @@ def inversematrices(data):
                 
     return Cinv    
 
-def matrixQuadfit(data,threshold=66000,ignoreRef=False):  
+def matrixQuadfit(data,threshold=66000, mode="SLOW",ignoreRef=False):  
     # From Kathleen Tatem
     #don't use the reference pixels in calculations
     if ignoreRef:
@@ -71,7 +71,10 @@ def matrixQuadfit(data,threshold=66000,ignoreRef=False):
     
     #put a zero everywhere in the 4D data cube that the intensity is above or equal to threshold 
     #doesn't account for when data goes below threshold again after saturating
-    unsatdata = np.where(data <= threshold, data, 0) 
+    if mode == "SLOW":
+      unsatdata = np.where(data >= threshold, data, 0)
+    else:
+      unsatdata = np.where(data <= threshold, data, 0) 
     #make a mask data set, where data above threshold = 0, and data below threshold = 1
     mask = np.where(unsatdata == 0, unsatdata, 1) 
     #1-D array of the frame times from 0 to N 

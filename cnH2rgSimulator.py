@@ -39,7 +39,9 @@ class cnH2rgFrame():
 class cnH2rgRamp():
   def __init__(self, mode, ndr, frameTime, frameDealy, biasLevel, biasLevelOffsetScaling, readNoise, arrayTemperature,
                sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, addInstrumentDark=False,
-               addInstrumentDarkNoise=False,addThermalDark=False, addThermalDarkNoise=False, fileFormat=None):
+               addInstrumentDarkNoise=False,addThermalDark=False, addThermalDarkNoise=False,
+               addFlatQuadraticSignal=False,quadraticCoeff=[2.,1.,0], addFlatQuadraticNoise=False,
+               addGainVariation=False, gainVariation=0.01, fileFormat=None):
 #  def __init__(self, mode, frameRate, integrationTime, biasChannelDifference,
 #               biasChannelVariations, channelReadNoise, channelReadNoiseVariation,
 #               gainVariation, deadPixels, negPixels, darkCurrent, ):
@@ -80,6 +82,7 @@ class cnH2rgRamp():
           print('mean and std read noise',np.mean(readNoiseFrame),np.std(readNoiseFrame))
         else:
           readNoiseFrame = np.zeros((emptyFrame.xDim,emptyFrame.yDim))
+        #TODO: add gradient in the first frame
         
         # dark current and noise
         # slow mode does pixel by pixel reset, fast has global reset.
@@ -96,10 +99,10 @@ class cnH2rgRamp():
           instrumentDark.frame[:,1024-int(bandwidth/2):1024+int(bandwidth/2.)] = (instrumentDark.frame[:,1024-int(bandwidth/2):1024+
                                         int(bandwidth/2.)]+i*self.frameTime*20.)
           if addInstrumentDarkNoise:
-            # use normal distribution to simulate dark noise
+            # use shot noise to simulate dark noise
             instrumentDarkNoiseFrame = np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))*np.sqrt(tempDarkCurrent)
             instrumentDarkNoiseFrame[:,1024-int(bandwidth/2):1024+int(bandwidth/2.)] = np.sqrt(instrumentDarkNoiseFrame[:,1024-int(bandwidth/2):1024+int(bandwidth/2.)]**2.+
-                                                instrumentDark.frame[:,1024-int(bandwidth/2):1024+int(bandwidth/2.)])
+                                                instrumentDark.frame[:,1024-int(bandwidth/2):1024+int(bandwidth/2.)])*np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))
             
         thermalDark = cnH2rgFrame() # all zeros
         thermalDarkNoiseFrame = np.zeros((emptyFrame.xDim,emptyFrame.yDim))
@@ -110,14 +113,36 @@ class cnH2rgRamp():
           thermalDark.frame[:,0:int(bandwidth)] = (thermalDark.frame[:,0:int(bandwidth)]+i*self.frameTime*40.)
           thermalDark.frame[:,-int(bandwidth)+1:] = (thermalDark.frame[:,-int(bandwidth)+1:]+i*self.frameTime*40.)
           if addThermalDarkNoise:
-            # use normal distribution to simulate dark noise
-            thermalDarkNoiseFrame = np.sqrt(thermalDark.frame)
+            # use shot noise to simulate dark noise
+            thermalDarkNoiseFrame = np.sqrt(thermalDark.frame)*np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))
         
+        
+        #add a flat signal with quadratic increase
+        flatSignal = cnH2rgFrame() # all zeros
+        flatSignalNoiseFrame = np.zeros((emptyFrame.xDim,emptyFrame.yDim))
+        if addFlatQuadraticSignal:
+          # create an illuminated band in the two beams of the  frame
+          bandwidth = 990 # needs to be even
+          
+          
+          flatSignal.frame[:,0:int(bandwidth)] = (flatSignal.frame[:,0:int(bandwidth)]+i*self.frameTime*quadraticCoeff[1]+i*self.frameTime**2.*quadraticCoeff[0])
+          flatSignal.frame[:,-int(bandwidth)+1:] = (flatSignal.frame[:,-int(bandwidth)+1:]+i*self.frameTime*quadraticCoeff[1]+i*self.frameTime**2.*quadraticCoeff[0])
+          # do the gain variation row wise to clearly identify it in the data
+          if addGainVariation:
+            varVector = np.random.normal(loc=1.0, scale=gainVariation, size=emptyFrame.yDim)
+            flatSignal.frame = np.multiply(flatSignal.frame,varVector[:,None])
+          
+          if addFlatQuadraticNoise:
+            # use normal distribution to simulate dark noise
+            flatSignalNoiseFrame = np.sqrt(flatSignal.frame)*np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))
+          
         # put it all together and save data
         finalFrame = (bias.frame +
                       readNoiseFrame +
                       self.addingSign*instrumentDark.frame + instrumentDarkNoiseFrame +
-                      self.addingSign*thermalDark.frame + thermalDarkNoiseFrame )
+                      self.addingSign*thermalDark.frame + thermalDarkNoiseFrame +
+                      self.addingSign*flatSignal.frame + flatSignalNoiseFrame)
+        
         finalFrame = np.uint16(finalFrame)#+readNoiseFrame)
         if fileFormat == 'fits':
           self.writeFits(finalFrame,'data/', self.sequenceName+'-{0:05d}-{1:05d}'.format(j,i)+'.fits',overwrite=True)
@@ -285,11 +310,14 @@ print('in between frame dealy [ms]',c.betweenFrameDelayTime/1e6)
 print('exposure time [ms]',c.exposureTime/1e6)
 
 #sequenceName = "/instrumentDark/simInstrumentDark"
-sequenceName = "/backgroundDark/simBackgroundDark"
+#sequenceName = "/backgroundDark/simBackgroundDark"
+sequenceName = "/flatSignal/simFlatSignal"
 a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
              arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
-             addInstrumentDark=True,addInstrumentDarkNoise=True,
-              addThermalDark=True, addThermalDarkNoise=True,fileFormat='arr')    
+             addInstrumentDark=False,addInstrumentDarkNoise=False,
+              addThermalDark=False, addThermalDarkNoise=False,
+              addFlatQuadraticSignal=True,quadraticCoeff=[10.,10000.,0], addFlatQuadraticNoise=True,
+              addGainVariation=True,gainVariation=0.1,fileFormat='fits')    
 
 # flux tester
 #f1= 100

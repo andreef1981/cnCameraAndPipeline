@@ -32,9 +32,9 @@ import matplotlib.pyplot as plt
 #fit = np.polynomial.polynomial.polyval(time,np.flipud(p), tensor=True)
 
 # reading byte arrays
-da = np.fromfile('data/thermalDark/masterThermalDark-00000-00009.arr',dtype=np.float32,count=-1,sep="")
-s = da.astype(bytes)
-st = s.astype(np.float32)
+#da = np.fromfile('data/thermalDark/masterThermalDark-00000-00009.arr',dtype=np.float32,count=-1,sep="")
+#s = da.astype(bytes)
+#st = s.astype(np.float32)
 #da = np.memmap('data/thermalDark/masterThermalDark-00000-00009.arr',
 #               dtype='float32', mode='r', shape=(2048,2048))
 #fig, ax=plt.subplots()
@@ -43,3 +43,8 @@ st = s.astype(np.float32)
 #plt.imshow(np.reshape(da,(2048,2048)))
 ##plt.imshow(da)
 #plt.show()
+
+varVector = np.random.standard_normal(size=(10))
+varVector = np.random.normal(loc=1.0, scale=0.01, size=10)
+data = np.ones((10,10))
+res = np.multiply(data,varVector[:,None])

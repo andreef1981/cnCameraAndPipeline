@@ -11,7 +11,9 @@ import matplotlib.pyplot as plt
 from cnPipeline import *
 from helperFunctions import *
 
-def linearity(data, threshold=66000.):
+def linearity(data,
+              threshold=66000.,
+              mode="SLOW"):
   """
   Returns a linearised ramp of the CryoNIRSP H2RG. Assuming only a quadratic 
   term is removed
@@ -22,6 +24,8 @@ def linearity(data, threshold=66000.):
         3D data cube that needs to be linearity corrected.
     threshold : float
         threshold for the quadratic fit. Everything above will be excluded.
+    mode : string, default="SLOW"
+        defines the readout mode of the camera
 
     Returns
     -------
@@ -50,6 +54,8 @@ def linearity(data, threshold=66000.):
     >>> data = np.tile(val[:,None,None],(1,10,10))
     >>> res = linearity(data,c,t)
    """
+   
+  #TODO: linearity threshold currently only works for one mode
   if len(data.shape) == 3:
     # only a single ramp is provided but matrix quadfit expects another axis
     data = np.expand_dims(data, axis=0)
@@ -57,7 +63,7 @@ def linearity(data, threshold=66000.):
   # in this case we use the NDR number as our 'time' axis
   dataTime = np.arange(data.shape[1])
   # fit quadratic to data
-  a,b,c = matrixQuadfit(data,threshold=90,ignoreRef=False)
+  a,b,c = matrixQuadfit(data,threshold=90,mode=mode,ignoreRef=False)
   
   # Use numpy's multiply capability to to the multiplication along the right axis
 #  nonLinear = np.multiply(np.expand_dims(linearityCoefficients[0,:,:],axis=0),
