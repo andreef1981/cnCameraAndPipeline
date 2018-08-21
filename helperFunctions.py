@@ -64,6 +64,10 @@ def inversematrices(data):
 def matrixQuadfit(data,threshold=66000, mode="SLOW",ignoreRef=False):  
     # From Kathleen Tatem
     #don't use the reference pixels in calculations
+    
+    #TODO: figure out how to treat data with only two frames up the ramp
+    
+    #TODO: sequnce with only 3 valid frames should work but does not
     if ignoreRef:
       data = data[:, :, 4:-4, 4:-4]
 
@@ -89,8 +93,9 @@ def matrixQuadfit(data,threshold=66000, mode="SLOW",ignoreRef=False):
     invCijperpix = np.zeros((6, len(data[:,0,0,0]), len(data[0,0,:,0]), len(data[0,0,0,:])))
     for i in t[1:]:
         #makes sure that pixels that cross the threshold say out of our calculations even if they go under threshold again
-        mask[:,i] = mask[:,i]*mask[:, i-1]        
-        unsatdata[:,i] = unsatdata[:,i]*mask[:, i-1]
+        mask[:,i] = mask[:,i]*mask[:, i-1]    
+        #FIXED: next line ...*mask[:,i] not i-1
+        unsatdata[:,i] = unsatdata[:,i]*mask[:, i]
         #dot the data with time vectors of order 1, and 2
         bij = (unsatdata[:,i]*i) + bij
         cij = (unsatdata[:,i]*(i**2)) + cij

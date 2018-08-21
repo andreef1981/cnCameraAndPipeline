@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from cnPipeline import *
 
-def dark(data,,
+def dark(data,
          backgroundDark):
   
   #TODO: remove instrument dark subtraction and make sure background is linearity corrected
