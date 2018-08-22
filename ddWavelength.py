@@ -58,7 +58,7 @@ def wavelength(data,
   
   return waveVector
 
-# sample code to run dark plugin
+# sample code to run wavecal plugin
 #a=cnH2rgRamps("data/gain/simGain*",readMode="SLOW",subArray=None,verbose=True)
 #data = np.squeeze(a.read(dtype=np.uint16))
 #

@@ -82,9 +82,7 @@ def dark(data,
   return darkSubtracted
 
 # sample code to run dark plugin
-#a=cnH2rgRamps("data/instrumentDark/masterInstrumentDark*",readMode="SLOW",subArray=None,verbose=True)
-#instrumentDark = np.squeeze(a.read(dtype=np.float32))
-#
+
 #b=cnH2rgRamps("data/backgroundDark/masterBackgroundDark*",readMode="SLOW",subArray=None,verbose=True)
 #backgroundDark = np.squeeze(b.read(dtype=np.float32))
 #c= cnH2rgRamps("data/backgroundDark/simBackgroundDark*",readMode="SLOW",subArray=None,verbose=True)

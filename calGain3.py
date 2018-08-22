@@ -15,7 +15,7 @@ from astropy.io import fits
 from cnPipeline import *
 from ddLinearity import *
 
-def masterGain(data,
+def masterGain3(data,
                threshold=None,
                mode=None,
                writeToFile=False,
@@ -58,12 +58,7 @@ def masterGain(data,
     These are written in doctest format, and should illustrate how to
     use the function.
 
-    >>> data = np.zeros((3,5,10,10),dtype='uint16')+6
-    >>> masterInstrumentDark = np.zeros((5,10,10),dtype='float32')+3
-    >>> masterBackgroundDark = masterBackgroundDark(data, masterInstrumentDark,
-                                              writeToFits=True,
-                                              path='data/backgroundDark/',
-                                              sequenceName='masterBackgroundDark')
+    >>> 
    """
   
   
@@ -101,12 +96,9 @@ def masterGain(data,
 
 #a=cnH2rgRamps("data/gain/simGainVariation*",readMode="SLOW",subArray=None,verbose=True)
 #data = np.squeeze(a.read(dtype=np.uint16))
-#linData=np.zeros(data.shape)
-#for i in range(3):
-#  linData[i,:,:,:] = linearity(data[i,:,:,:], threshold=0, mode="SLOW")
-#c= masterGain(data, threshold=0, mode="SLOW", writeToFile=True, path='data/gain/',
-#                     sequenceName='gainTable',fileFormat='fits')
-
+#c= masterGain3(data, threshold=0, mode="SLOW", writeToFile=True, path='data/gain/',
+#                     sequenceName='gainTable',fileFormat='arr')
+#
 #fig, ax=plt.subplots()
 #plt.imshow(data[0,5,:,:])
 #

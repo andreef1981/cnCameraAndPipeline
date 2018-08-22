@@ -8,8 +8,8 @@ Created on Tue Aug  7 12:09:44 2018
 import numpy as np
 import matplotlib.pyplot as plt
 from cnPipeline import *
-#from helperFunctions import *
-#from astropy.io import fits  # Reading/writing FITS data
+from helperFunctions import *
+from astropy.io import fits  # Reading/writing FITS data
 
 def gain(data,
          gainTable):
@@ -57,11 +57,11 @@ def gain(data,
   
   return gainCorrected
 
-# sample code to run dark plugin
+# sample code to run gain plugin
 #a=cnH2rgRamps("data/gain/simGain*",readMode="SLOW",subArray=None,verbose=True)
 #data = np.squeeze(a.read(dtype=np.uint16))
 #
-#gainTable = in_im = fits.open("data/gain/gainTable.fits")[0].data.astype(np.float32)
+#gainTable = in_im = fits.open("data/gain/gain3Table.fits")[0].data.astype(np.float32)
 #b = gain(data,gainTable)
 #
 #fig, ax=plt.subplots()

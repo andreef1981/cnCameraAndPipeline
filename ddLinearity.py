@@ -74,28 +74,28 @@ def linearity(data,
   # Use numpy's multiply capability to to the multiplication along the right axis
 #  nonLinear = np.multiply(np.expand_dims(linearityCoefficients[0,:,:],axis=0),
 #                          dataTime[:,None,None]**2.)
-  print(a[0,0],b[0,0],c[0,0])
+#  print(a[0,0],b[0,0],c[0,0])
   nonLinear = np.multiply(c,dataTime[:,None,None]**2.)
   
   linearityCorrected = np.squeeze(data) - nonLinear
   
   return linearityCorrected
 
-# sample code to run dark plugin
-a=cnH2rgRamps("data/flatSignal/simFlatSignal*",readMode="SLOW",subArray=None,verbose=True)
-flat = np.squeeze(a.read(dtype=np.uint16))
-print('done reading')
-so = flat
-res = linearity(so, threshold=0, mode="SLOW")
-fig, ax=plt.subplots()
-ax.plot(np.arange(10),flat[:,0,0], np.arange(10),res[:,0,0])
-
-fig, ax=plt.subplots()
-plt.imshow(np.squeeze(flat[9,:,:]))
-
-fig, ax=plt.subplots()
-plt.imshow(res[9,:,:])
-plt.show()
+# sample code to run linearity plugin
+#a=cnH2rgRamps("data/flatSignal/simFlatSignal*",readMode="SLOW",subArray=None,verbose=True)
+#flat = np.squeeze(a.read(dtype=np.uint16))
+#print('done reading')
+#so = flat
+#res = linearity(so, threshold=0, mode="SLOW")
+#fig, ax=plt.subplots()
+#ax.plot(np.arange(10),flat[:,0,0], np.arange(10),res[:,0,0])
+#
+#fig, ax=plt.subplots()
+#plt.imshow(np.squeeze(flat[9,:,:]))
+#
+#fig, ax=plt.subplots()
+#plt.imshow(res[9,:,:])
+#plt.show()
 
   
 

@@ -41,7 +41,8 @@ class cnH2rgRamp():
                sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, addInstrumentDark=False,
                addInstrumentDarkNoise=False,addThermalDark=False, addThermalDarkNoise=False,
                addFlatQuadraticSignal=False,quadraticCoeff=[2.,1.,0], addFlatQuadraticNoise=False,
-               addGainVariation=False, gainVariation=0.01, fileFormat=None):
+               gainVariation=None, 
+               spectrum=None, fileFormat=None):
 #  def __init__(self, mode, frameRate, integrationTime, biasChannelDifference,
 #               biasChannelVariations, channelReadNoise, channelReadNoiseVariation,
 #               gainVariation, deadPixels, negPixels, darkCurrent, ):
@@ -126,10 +127,9 @@ class cnH2rgRamp():
           
            # do the gain variation row wise to clearly identify it in the data
           varVector = np.ones(emptyFrame.yDim)
-          if addGainVariation:
-            varVector = np.random.normal(loc=1.0, scale=gainVariation, size=emptyFrame.yDim)
-          print("time",i*self.frameTime)
-          print((i*self.frameTime)**2.*quadraticCoeff[0],i*self.frameTime*quadraticCoeff[1])
+          if gainVariation is not None:
+            varVector = gainVariation
+          
           flatSignal.frame[:,0:int(bandwidth)] = (flatSignal.frame[:,0:int(bandwidth)]+
                           (i*self.frameTime*quadraticCoeff[1]*varVector)[:,None]+
                           (i*self.frameTime)**2.*quadraticCoeff[0])
@@ -137,6 +137,8 @@ class cnH2rgRamp():
                           (i*self.frameTime*quadraticCoeff[1]*varVector)[:,None]+
                           (i*self.frameTime)**2.*quadraticCoeff[0])
          
+          if spectrum is not None:
+            flatSignal.frame = flatSignal.frame * spectrum
           
           if addFlatQuadraticNoise:
             # use normal distribution to simulate dark noise
@@ -315,16 +317,29 @@ print('first pixel read after [us]',c.firstPixelRead*1000.)
 print('in between frame dealy [ms]',c.betweenFrameDelayTime/1e6)
 print('exposure time [ms]',c.exposureTime/1e6)
 
+nrSequences = 1
 #sequenceName = "/instrumentDark/simInstrumentDark"
 #sequenceName = "/backgroundDark/simBackgroundDark"
-#sequenceName = "/flatSignal/simflatSignal"
-sequenceName = "/gain/simGainVariation"
+#sequenceName = "/flatSignal/simFlatSignal"
+#sequenceName = "/gain/simGainVariation"
+sequenceName = "/spectra/simSpectrum"
+
+# create fixe gain variation
+#varVector = np.random.normal(loc=1.0, scale=0.1, size=2048)
+#hdu = fits.PrimaryHDU(varVector)
+#hdu.writeto('data/gain/2048row_gainVariation.fits',overwrite=True)
+
+heSpectrum = fits.open("data/spectra/he_spectrum_combined-32bitfloat.fits")[0].data.astype(np.float32)
+gainVariation = fits.open("data/gain/2048row_gainVariation.fits")[0].data.astype(np.float32)
+
+#TODO: instrument dark noise has issue with non matching array sizes
 a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
              arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
-             addInstrumentDark=False,addInstrumentDarkNoise=False,
-              addThermalDark=False, addThermalDarkNoise=False,
+             addInstrumentDark=True,addInstrumentDarkNoise=False,
+              addThermalDark=True, addThermalDarkNoise=False,
               addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
-              addGainVariation=True,gainVariation=0.1,fileFormat='fits')    
+              gainVariation=gainVariation,
+              spectrum=heSpectrum, fileFormat='arr')    
 
 # flux tester
 #f1= 100

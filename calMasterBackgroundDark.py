@@ -84,9 +84,8 @@ def masterBackgroundDark(data,
   return averagedDark
 
 
-#a=cnH2rgRamps("data/instrumentDark/masterInstrumentDark*",readMode="SLOW",subArray=None,verbose=True)
-#instrumentDark = np.squeeze(a.read(dtype=np.float32))
+#
 #b=cnH2rgRamps("data/backgroundDark/simBackgroundDark*",readMode="SLOW",subArray=None,verbose=True)
 #data=b.read()
-#c= masterBackgroundDark(data, instrumentDark, writeToFile=True, path='data/backgroundDark/',
+#c= masterBackgroundDark(data, writeToFile=True, path='data/backgroundDark/',
 #                     sequenceName='masterBackgroundDark',fileFormat='arr')
