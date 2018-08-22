@@ -44,7 +44,17 @@ import matplotlib.pyplot as plt
 ##plt.imshow(da)
 #plt.show()
 
-varVector = np.random.standard_normal(size=(10))
-varVector = np.random.normal(loc=1.0, scale=0.01, size=10)
-data = np.ones((10,10))
-res = np.multiply(data,varVector[:,None])
+#varVector = np.random.standard_normal(size=(10))
+#varVector = np.random.normal(loc=1.0, scale=0.01, size=10)
+#data = np.ones((10,10))
+#res = np.multiply(data,varVector[:,None])
+
+# He dispersion is 4.23e-3 nm per pixel
+a = (np.arange(1024)-512)*4.23e-3 + 1083.
+waveVector = np.concatenate((a,a))
+waveMatrix = np.float32(np.repeat(waveVector[None,:],2048, axis=0))
+hdu = fits.PrimaryHDU(waveMatrix)
+hdu.writeto('data/wavecal/wavecal.fits',overwrite=True)
+
+fig, ax=plt.subplots()
+ax.plot(np.arange(2048), waveVector)

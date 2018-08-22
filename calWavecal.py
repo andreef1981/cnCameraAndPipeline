@@ -15,13 +15,13 @@ from astropy.io import fits
 from cnPipeline import *
 from ddLinearity import *
 
-def masterGain(data,
-               threshold=None,
-               mode=None,
-               writeToFile=False,
-               path=None,
-               sequenceName=None,
-               fileFormat='fits'):
+def masterWavecal(data,
+                  threshold=None,
+                  mode=None,
+                  writeToFile=False,
+                  path=None,
+                  sequenceName=None,
+                  fileFormat='fits'):
   
   """
   Returns the gain table for the CryoNIRSP H2RG.

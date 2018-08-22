@@ -53,8 +53,7 @@ def wavelength(data,
     >>> 
    """
   
-  # broadcasting does the right thing by multiplying all frames with the gain
-  # table
+  # for now just use the center row
   waveVector = waveCal[1024,:]
   
   return waveVector
@@ -63,12 +62,7 @@ def wavelength(data,
 #a=cnH2rgRamps("data/gain/simGain*",readMode="SLOW",subArray=None,verbose=True)
 #data = np.squeeze(a.read(dtype=np.uint16))
 #
-#gainTable = in_im = fits.open("data/gain/gainTable.fits")[0].data.astype(np.float32)
-#b = gain(data,gainTable)
+#waveCal = fits.open("data/wavecal/wavecal.fits")[0].data.astype(np.float32)
+#b = wavelength(data,waveCal,1)
 #
-#fig, ax=plt.subplots()
-#plt.imshow(data[1,1,:,:])
-#
-#fig, ax=plt.subplots()
-#plt.imshow(b[1,1,:,:])
-#plt.show()
+#plt.plot(b)

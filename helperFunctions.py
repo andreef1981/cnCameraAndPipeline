@@ -3,8 +3,7 @@
 """
 Created on %(date)s
 
-@author: %(Andre Fehlmann)s
-
+@author: Andre Fehlmann (afehlmann@nso.edu)
 helper library
 """
 

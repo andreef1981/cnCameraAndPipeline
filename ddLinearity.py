@@ -82,20 +82,20 @@ def linearity(data,
   return linearityCorrected
 
 # sample code to run dark plugin
-#a=cnH2rgRamps("data/flatSignal/simFlatSignal*",readMode="SLOW",subArray=None,verbose=True)
-#flat = np.squeeze(a.read(dtype=np.uint16))
-#print('done reading')
-#so = flat
-#res = linearity(so, threshold=0, mode="SLOW")
-#fig, ax=plt.subplots()
-#ax.plot(np.arange(10),flat[:,0,0], np.arange(10),res[:,0,0])
+a=cnH2rgRamps("data/flatSignal/simFlatSignal*",readMode="SLOW",subArray=None,verbose=True)
+flat = np.squeeze(a.read(dtype=np.uint16))
+print('done reading')
+so = flat
+res = linearity(so, threshold=0, mode="SLOW")
+fig, ax=plt.subplots()
+ax.plot(np.arange(10),flat[:,0,0], np.arange(10),res[:,0,0])
 
-#fig, ax=plt.subplots()
-#plt.imshow(np.squeeze(flat[9,:,:]))
-#
-#fig, ax=plt.subplots()
-#plt.imshow(res[9,:,:])
-#plt.show()
+fig, ax=plt.subplots()
+plt.imshow(np.squeeze(flat[9,:,:]))
+
+fig, ax=plt.subplots()
+plt.imshow(res[9,:,:])
+plt.show()
 
   
 
