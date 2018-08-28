@@ -145,8 +145,6 @@ def calAlign1(data,
     newRotationFM1B = oldRotationFM1B-0.8 # simulate change by 0.8 degrees
     changeFlag[1,2] = True
   
-  
-  
   return newAlignFM1A, newAlignFM1B, newStepSizeFM1A, newStepSizeFM1B,\
          newRotationFM1A, newRotationFM1B, changeFlag
 
