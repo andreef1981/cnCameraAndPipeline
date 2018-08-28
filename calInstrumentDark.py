@@ -3,13 +3,19 @@
 """
 Created on %(date)s
 
-@author: %(Andre Fehlmann)s
+@author: Andre Fehlmann (afehlmann@nso.edu)
+
+Revision history
+----------------
+
+28 August 2018:
+    Changed file and function name to match other calibration functions.
 """
 import numpy as np
 from astropy.io import fits
 from cnPipeline import *
 
-def masterInstrumentDark(data, writeToFile=False, path=None, sequenceName=None,
+def calInstrumentDark(data, writeToFile=False, path=None, sequenceName=None,
                          fileFormat='fits'):
   
   """
@@ -48,14 +54,14 @@ def masterInstrumentDark(data, writeToFile=False, path=None, sequenceName=None,
     use the function.
 
     >>> data = np.zeros((3,5,10,10),dtype='uint16')+6
-    >>> masterInstrumentDark = masterInstrumentDark(data, writeToFits=True,
+    >>> InstrumentDark = calInstrumentDark(data, writeToFits=True,
                                               path='data/instrumentDark/',
                                               sequenceName='masterInstrumentDark')
    """
   
   
   #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
-  
+  #TODO: Linearity correction prior or after averaging
   #print('mean variance and std of variance', np.mean(np.var(data,axis=0)),np.std(np.var(data,axis=0)))
   averagedDark = np.float32(np.average(data, axis=0))
   
@@ -73,5 +79,5 @@ def masterInstrumentDark(data, writeToFile=False, path=None, sequenceName=None,
 #
 #a=cnH2rgRamps("data/instrumentDark/simInstrumentDark*",readMode="SLOW",subArray=None,verbose=True)
 #data=a.read()
-#b= masterInstrumentDark(data, writeToFile=True, path='data/instrumentDark/',
+#b= calInstrumentDark(data, writeToFile=True, path='data/instrumentDark/',
 #                        sequenceName='masterInstrumentDark', fileFormat='arr')

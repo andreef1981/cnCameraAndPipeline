@@ -10,13 +10,15 @@ Revision history
 15 August 2018:
     Removed instrument dark subtractiona as we only use background dark stand
     alone and thus the instrument dark has to be contained. Andre
+28 August 2018:
+    Changed file and function name to match other calibration functions.
     
 """
 import numpy as np
 from astropy.io import fits
 from cnPipeline import *
 
-def masterBackgroundDark(data,
+def calBackgroundDark(data,
                          writeToFile=False,
                          path=None,
                          sequenceName=None,
@@ -58,8 +60,8 @@ def masterBackgroundDark(data,
     use the function.
 
     >>> data = np.zeros((3,5,10,10),dtype='uint16')+6
-    >>> masterInstrumentDark = np.zeros((5,10,10),dtype='float32')+3
-    >>> masterBackgroundDark = masterBackgroundDark(data, masterInstrumentDark,
+    >>> InstrumentDark = np.zeros((5,10,10),dtype='float32')+3
+    >>> BackgroundDark = calBackgroundDark(data, InstrumentDark,
                                               writeToFits=True,
                                               path='data/backgroundDark/',
                                               sequenceName='masterBackgroundDark')
@@ -87,5 +89,5 @@ def masterBackgroundDark(data,
 #
 #b=cnH2rgRamps("data/backgroundDark/simBackgroundDark*",readMode="SLOW",subArray=None,verbose=True)
 #data=b.read()
-#c= masterBackgroundDark(data, writeToFile=True, path='data/backgroundDark/',
+#c= calBackgroundDark(data, writeToFile=True, path='data/backgroundDark/',
 #                     sequenceName='masterBackgroundDark',fileFormat='arr')
