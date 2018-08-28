@@ -139,6 +139,10 @@ class cnH2rgRamp():
          
           if spectrum is not None:
             flatSignal.frame = flatSignal.frame * spectrum
+          # TODO: Add slit rotation
+          # TODO: Add slit curvature
+          # TODO: Add pinhole spectra
+          
           
           if addFlatQuadraticNoise:
             # use normal distribution to simulate dark noise
