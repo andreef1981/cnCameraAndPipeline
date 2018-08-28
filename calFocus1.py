@@ -18,12 +18,14 @@ from ddLinearity import *
 def calFocus1(data,
               dark,
               gain,
+              badPixels,
               oldFocus,
               simulateChange=False):
   
   #TODO: should we return the focus position in user or raw units
   #TODO: should we add a threshold in a property database to decide if focus
   #      has changed?
+  #TODO: Where do we keep the bad pixel mask stored?
   
   
   #TODO: where is delta calculation to base done?
@@ -39,6 +41,8 @@ def calFocus1(data,
         stored background dark master ramp from calibration store
     gain: (2048, 2048) ndarray, float32
         stored gain table from calibration store
+    badPixels: (2048, 2048) ndarray, unit16
+        stored bad pixel mask
     oldFocus: float32/int64
         the prevously determined focus position
     simulateChange: bolean
@@ -70,17 +74,19 @@ def calFocus1(data,
   
   # Third perform flat fielding
   
-  # Fourth loop through sequences to find spatial and spectral focuses
+  # Fourth ignore/interpolate bad pixels
+  
+  # Fifth loop through sequences to find spatial and spectral focuses
   # TODO: helper function to find spatial bands for pinhole mask
   # TODO: helper function to find spectral lines in pinhole spectra
   # TODO: helper function for gaussian fit to spatial or spectral profile
   # TODO: remapping the beams would greatly help with detection of edges an fitting
   
-  # Fifth determine if focus has changed
+  # Sixth determine if focus has changed
   # TODO: what is the threshold for a change
   
   if simulateChange:
-    newFocus = oldFocus+1.0 # assuming useer units simulate change by 1mm
+    newFocus = oldFocus+1.0 # assuming user units simulate change by 1mm
     changeFlag = True
   else:
     newFocus = oldFocus
