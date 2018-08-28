@@ -16,6 +16,7 @@ from cnPipeline import *
 from ddLinearity import *
 
 def calFocus1(data,
+              stagePosition,
               dark,
               gain,
               badPixels,
@@ -23,6 +24,7 @@ def calFocus1(data,
               simulateChange=False):
   
   #TODO: should we return the focus position in user or raw units
+  #      (float32/uint64 for positions)
   #TODO: should we add a threshold in a property database to decide if focus
   #      has changed?
   #TODO: Where do we keep the bad pixel mask stored?
@@ -37,6 +39,8 @@ def calFocus1(data,
     ----------
     data : (#ramps, #NDRs, 2048, 2048) ndarray, uint16
         4D data cube that will be used to determine the best focus position.
+    stagePosition : (#ramps,) ndarray, float32/uint64
+        1D array that contains the positions of the focus stage for each ramp.
     dark : (#NDRs, 2048, 2048) ndarray, float32
         stored background dark master ramp from calibration store
     gain: (2048, 2048) ndarray, float32
