@@ -7,7 +7,6 @@ Created on %(date)s
 
 Revision history
 ----------------
-
     
 """
 import numpy as np
@@ -15,21 +14,39 @@ from astropy.io import fits
 from cnPipeline import *
 from ddLinearity import *
 
-def masterWavecal(data,
-                  threshold=None,
-                  mode=None,
-                  writeToFile=False,
-                  path=None,
-                  sequenceName=None,
-                  fileFormat='fits'):
+def calWavecal(data,
+               gratingPosition,
+               dark,
+               gain,
+               badPixels,
+               oldWavecal,
+               simulateChange=False,
+               threshold=None,
+               mode=None,
+               writeToFile=False,
+               path=None,
+               sequenceName=None,
+               fileFormat='fits'):
   
   """
-  Returns the gain table for the CryoNIRSP H2RG.
+  Returns wavlength calibration table for the CryoNIRSP H2RG.
   
    Parameters
     ----------
     data : (#ramps, #NDRs, 2048, 2048) ndarray, float32
         4D data cube that will be averaged.
+    gratingPosition : (#ramps,) ndarray, float32/uint64
+        1D array that contains the positions of the grating stage for each ramp.
+    dark : (#NDRs, 2048, 2048) ndarray, float32
+        stored background dark master ramp from calibration store
+    gain: (2048, 2048) ndarray, float32
+        stored gain table from calibration store
+    badPixels: (2048, 2048) ndarray, unit16
+        stored bad pixel mask
+    oldWavecal: (2048, 2048) ndarray, float32
+        previous wavelength calibration from calibration store
+    simulateChange: bolean
+        test flag
     writeToFile : bolean, optional, default=False
         writing to fits files for testing
     path: string
@@ -42,7 +59,9 @@ def masterWavecal(data,
     Returns
     -------
     gainTable : (2048, 2048) ndarray, float32
-        gain table for multiplicative gain correction
+        wavelength calibration table
+    changeFlag: bolean
+        indication whether wavecal has changed
 
     Raises
     ------
@@ -58,45 +77,49 @@ def masterWavecal(data,
     These are written in doctest format, and should illustrate how to
     use the function.
 
-    >>> data = np.zeros((3,5,10,10),dtype='uint16')+6
-    >>> masterInstrumentDark = np.zeros((5,10,10),dtype='float32')+3
-    >>> masterBackgroundDark = masterBackgroundDark(data, masterInstrumentDark,
-                                              writeToFits=True,
-                                              path='data/backgroundDark/',
-                                              sequenceName='masterBackgroundDark')
+    >>> 
    """
   
   
+  
   #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
-  
-  if len(data.shape) == 3:
-    # only a single ramp is provided but matrix quadfit expects another axis
-    data = np.expand_dims(data, axis=0)
+
     
-  # matrixQuadfit needs float data to work properly
-  data = np.float32(data)
-    
-  # in this case we use the NDR number as our 'time' axis
-  dataTime = np.arange(data.shape[1])
+  # First perform linearity correction
   
-  # fit quadratic to data
-  a,b,c = matrixQuadfit(data,threshold=threshold,mode=mode,ignoreRef=False)
-  # Use numpy's multiply capability to to the multiplication along the right axis
-#  nonLinear = np.multiply(np.expand_dims(linearityCoefficients[0,:,:],axis=0),
-#                          dataTime[:,None,None]**2.)
+  # Second subtract linearized background
   
-  temp = np.mean(b,axis=0)
-  gainTable = np.mean(temp)/temp
+  # Third perform flat fielding
+  
+  # Fourth ignore/interpolate bad pixels
+  
+  # Fifth loop through sequences to find spatial and spectral focuses
+  # TODO: helper function to find spatial bands for pinhole mask
+  # TODO: helper function to find spectral lines in pinhole spectra
+  # TODO: helper function for gaussian fit to spatial or spectral profile
+  # TODO: remapping the beams would greatly help with detection of edges an fitting
+  
+  # Sixth determine if focus has changed
+  # TODO: what is the threshold for a change
+  
+  if simulateChange:
+    newWavecal = oldWavecal+10.0 # assuming user units simulate change by 10nm
+    changeFlag = True
+  else:
+    newWavecal = oldWavecal
+    changeFlag = False
+  
+  
   
   # for test purposes lets write the files to fits
   if writeToFile:
     if fileFormat == 'fits':
-      hdu = fits.PrimaryHDU(gainTable)
+      hdu = fits.PrimaryHDU(newWavecal)
       hdu.writeto(path+sequenceName+'.fits',overwrite=True)
     else:
-      gainTable.tofile(path+sequenceName+'.arr',sep="")
+      newWavecal.tofile(path+sequenceName+'.arr',sep="")
   
-  return gainTable
+  return newWavecal, changeFlag
 
 
 #a=cnH2rgRamps("data/gain/simGainVariation*",readMode="SLOW",subArray=None,verbose=True)
