@@ -16,6 +16,7 @@ from ddLinearity import *
 
 def calWavecal(data,
                gratingPosition,
+               slit,
                dark,
                gain,
                badPixels,
@@ -34,7 +35,9 @@ def calWavecal(data,
    Parameters
     ----------
     data : (#ramps, #NDRs, 2048, 2048) ndarray, float32
-        4D data cube that will be averaged.
+        4D data cube that for wavelength calibration.
+    slit : string
+        identifying which slit mask is used 
     gratingPosition : (#ramps,) ndarray, float32/uint64
         1D array that contains the positions of the grating stage for each ramp.
     dark : (#NDRs, 2048, 2048) ndarray, float32
@@ -93,13 +96,12 @@ def calWavecal(data,
   
   # Fourth ignore/interpolate bad pixels
   
-  # Fifth loop through sequences to find spatial and spectral focuses
-  # TODO: helper function to find spatial bands for pinhole mask
-  # TODO: helper function to find spectral lines in pinhole spectra
-  # TODO: helper function for gaussian fit to spatial or spectral profile
+  # Fifth loop through sequences to find lines from ThAr spectrum
+  # TODO: helper function to find emission lines in slit or pinhole spectra
+  # TODO: helper function to identify spectral lines from ThAr spectrum
   # TODO: remapping the beams would greatly help with detection of edges an fitting
   
-  # Sixth determine if focus has changed
+  # Sixth determine if wavecal has changed
   # TODO: what is the threshold for a change
   
   if simulateChange:
@@ -108,8 +110,6 @@ def calWavecal(data,
   else:
     newWavecal = oldWavecal
     changeFlag = False
-  
-  
   
   # for test purposes lets write the files to fits
   if writeToFile:
