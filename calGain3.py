@@ -7,7 +7,10 @@ Created on %(date)s
 
 Revision history
 ----------------
-
+28 August 2018:
+  - rename the function to match others
+  - add inputs: dark, badPixels, simulateChange
+  - add ouputs:
     
 """
 import numpy as np
@@ -15,21 +18,36 @@ from astropy.io import fits
 from cnPipeline import *
 from ddLinearity import *
 
-def masterGain3(data,
-               threshold=None,
-               mode=None,
-               writeToFile=False,
-               path=None,
-               sequenceName=None,
-               fileFormat='fits'):
+def calGain3(data,
+             stagePosition
+             dark,
+             badPixels,
+             oldGain,
+             simulateChange=False,
+             threshold=None,
+             mode=None,
+             writeToFile=False,
+             path=None,
+             sequenceName=None,
+             fileFormat='fits'):
   
   """
-  Returns the gain table for the CryoNIRSP H2RG.
+  Returns the simple gain table for the spectrograph CryoNIRSP H2RG.
   
    Parameters
     ----------
     data : (#ramps, #NDRs, 2048, 2048) ndarray, float32
         4D data cube that will be averaged.
+    stagePosition : (#ramps,) ndarray, float32/uint64
+        1D array that contains the positions of the lamp stage for each ramp.
+    dark : (#NDRs, 2048, 2048) ndarray, float32
+        stored background dark master ramp from calibration store
+    badPixels: (2048, 2048) ndarray, unit16
+        stored bad pixel mask
+    oldGain: (2048, 2048) ndarray, float32
+        the prevously determined gain table
+    simulateChange: bolean
+        test flag
     writeToFile : bolean, optional, default=False
         writing to fits files for testing
     path: string
