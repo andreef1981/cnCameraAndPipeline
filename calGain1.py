@@ -21,6 +21,7 @@ def calGain1(data,
              dark,
              badPixels,
              oldGain,
+             threshold=None,
              simulateChange=False):
   
   #TODO: are the stage positions in user or raw units
@@ -49,6 +50,8 @@ def calGain1(data,
         stored bad pixel mask
     oldGain: (2048, 2048) ndarray, float32
         the prevously determined gain table
+    threshold : float32/uint64
+        change beyond which change flag is set
     simulateChange: bolean
         test flag
 

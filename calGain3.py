@@ -9,8 +9,8 @@ Revision history
 ----------------
 28 August 2018:
   - rename the function to match others
-  - add inputs: dark, badPixels, simulateChange
-  - add ouputs:
+  - add inputs: stage position, dark, badPixels, threshold, simulateChange
+  - add ouputs: changeFlag
     
 """
 import numpy as np
@@ -19,17 +19,25 @@ from cnPipeline import *
 from ddLinearity import *
 
 def calGain3(data,
-             stagePosition
+             stagePosition,
              dark,
              badPixels,
              oldGain,
-             simulateChange=False,
              threshold=None,
+             simulateChange=False,
              mode=None,
              writeToFile=False,
              path=None,
              sequenceName=None,
              fileFormat='fits'):
+  #TODO: are the stage positions in user or raw units
+  #      (float32/uint64 for positions)
+  #TODO: should we add a threshold in a property database to decide if gain
+  #      has changed?
+  #TODO: Where do we keep the bad pixel mask stored?
+  
+  
+  #TODO: where is delta calculation to base done?
   
   """
   Returns the simple gain table for the spectrograph CryoNIRSP H2RG.
@@ -46,6 +54,8 @@ def calGain3(data,
         stored bad pixel mask
     oldGain: (2048, 2048) ndarray, float32
         the prevously determined gain table
+    threshold : float32/uint64
+        change beyond which change flag is set
     simulateChange: bolean
         test flag
     writeToFile : bolean, optional, default=False
@@ -92,7 +102,7 @@ def calGain3(data,
   data = np.float32(data)
     
   # in this case we use the NDR number as our 'time' axis
-  dataTime = np.arange(data.shape[1])
+#  dataTime = np.arange(data.shape[1])
   
   # fit quadratic to data
   a,b,c = matrixQuadfit(data,threshold=threshold,mode=mode,ignoreRef=False)
