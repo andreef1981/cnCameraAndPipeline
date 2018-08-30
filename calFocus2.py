@@ -16,6 +16,7 @@ def calFocus2(data,
               gain,
               badPixels,
               oldFocus,
+              threshold=None,
               simulateChange=False):
   
   #TODO: should we return the focus position in user or raw units
@@ -46,6 +47,8 @@ def calFocus2(data,
         stored bad pixel mask
     oldFocus: float32/int64
         the prevously determined focus position
+    threshold : float32/uint64
+        change beyond which change flag is set
     simulateChange: bolean
         test flag
 

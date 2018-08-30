@@ -19,10 +19,10 @@ from astropy.io import fits
 from cnPipeline import *
 
 def calBackgroundDark(data,
-                         writeToFile=False,
-                         path=None,
-                         sequenceName=None,
-                         fileFormat='fits'):
+                      writeToFile=False,
+                      path=None,
+                      sequenceName=None,
+                      fileFormat='fits'):
   
   """
   Returns the averaged background dark ramp of the CryoNIRSP H2RG.

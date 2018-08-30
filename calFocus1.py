@@ -11,9 +11,9 @@ Revision history
     
 """
 import numpy as np
-from astropy.io import fits
-from cnPipeline import *
-from ddLinearity import *
+#from astropy.io import fits
+#from cnPipeline import *
+#from ddLinearity import *
 
 def calFocus1(data,
               stagePosition,
@@ -21,6 +21,7 @@ def calFocus1(data,
               gain,
               badPixels,
               oldFocus,
+              threshold=None,
               simulateChange=False):
   
   #TODO: should we return the focus position in user or raw units
@@ -49,6 +50,8 @@ def calFocus1(data,
         stored bad pixel mask
     oldFocus: float32/int64
         the prevously determined focus position
+    threshold : float32/uint64
+        change beyond which change flag is set
     simulateChange: bolean
         test flag
 

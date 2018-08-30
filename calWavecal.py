@@ -21,14 +21,20 @@ def calWavecal(data,
                gain,
                badPixels,
                oldWavecal,
-               simulateChange=False,
                threshold=None,
+               simulateChange=False,
                mode=None,
                writeToFile=False,
                path=None,
                sequenceName=None,
                fileFormat='fits'):
-  
+  #???: should we return the align position in user or raw units
+  #      (float32/uint64 for positions)
+  #???: should we add a threshold in a property database to decide if align
+  #      position has changed?
+  #???: Where do we keep the bad pixel mask stored?
+  #???: where is delta calculation to base done?
+  #???: does the dark need to be a "lamp off thermal dark"?
   """
   Returns wavlength calibration table for the CryoNIRSP H2RG.
   
@@ -48,6 +54,8 @@ def calWavecal(data,
         stored bad pixel mask
     oldWavecal: (2048, 2048) ndarray, float32
         previous wavelength calibration from calibration store
+    threshold : (2,3) ndarray, float32/uint64
+        change beyond which change flag is set
     simulateChange: bolean
         test flag
     writeToFile : bolean, optional, default=False

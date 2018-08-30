@@ -24,6 +24,7 @@ def calAlign1(data,
               oldStepSizeFM1B,
               oldRotationFM1A,
               oldRotationFM1B,
+              threshold=None,
               simulateChange=np.zeros((2,3),dtype=bool)):
   
   #???: should we return the align position in user or raw units
@@ -36,8 +37,7 @@ def calAlign1(data,
   
   """
   Returns the best center position of the beam steering mirror FM1A and FM1B 
-  for a given slit mask. If SP and CI run simultaneously the SP value is going
-  to take precedence.
+  for a given slit mask, pickoff state. 
   
    Parameters
     ----------
@@ -68,6 +68,8 @@ def calAlign1(data,
         the previously determined rotation for FM1A
     oldRotationFM1B: float32
         the previously determined rotation for FM1B
+    threshold : (2,3) ndarray, float32/uint64
+        change beyond which change flag is set
     simulateChange: (2,3) ndarray, boolean
         boolean array to simulate change in alginments
 

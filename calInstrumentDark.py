@@ -15,8 +15,11 @@ import numpy as np
 from astropy.io import fits
 from cnPipeline import *
 
-def calInstrumentDark(data, writeToFile=False, path=None, sequenceName=None,
-                         fileFormat='fits'):
+def calInstrumentDark(data,
+                      writeToFile=False,
+                      path=None,
+                      sequenceName=None,
+                      fileFormat='fits'):
   
   """
   Returns the averaged instrument dark ramp of the CryoNIRSP H2RG.
