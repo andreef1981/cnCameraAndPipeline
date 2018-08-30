@@ -59,8 +59,10 @@ def calGain3(data,
 
     Returns
     -------
-    gainTable : (2048, 2048) ndarray, float32
-        gain table for multiplicative gain correction
+    newGain: (2048, 2048) ndarray, float32
+        new gain table for multiplicative gain correction
+    changeFlag: bolean
+        indication whether gain has changed
 
     Raises
     ------

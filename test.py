@@ -23,13 +23,18 @@ import matplotlib.pyplot as plt
 #ax.plot(a,fit,'r')
 #plt.show()
 
-#time = np.float16(np.arange(4))
-#test = np.arange(100).reshape((5,5,4))
-#test[0,0,:]=[1,2,3,4]
-#new = test.reshape(-1, test.shape[-1])
-#p = np.polyfit(time, new.T, 2)
-#
-#fit = np.polynomial.polynomial.polyval(time,np.flipud(p), tensor=True)
+time = np.float16(np.arange(4))
+test = np.float32(np.arange(2048*2048*4).reshape((2048,2048,4)))
+test[0,0,:]=[1,2,3,np.nan]
+
+new = test.reshape(-1, test.shape[-1])
+new = new.T
+idx = ~np.isfinite(new)
+newm = np.ma.masked_array(new,mask=idx)
+#ttt = np.repeat(time[:,None],25,axis=1)
+p = np.ma.polyfit(time, newm, 2)
+
+fit = np.polynomial.polynomial.polyval(time,np.flipud(p), tensor=True)
 
 # reading byte arrays
 #da = np.fromfile('data/thermalDark/masterThermalDark-00000-00009.arr',dtype=np.float32,count=-1,sep="")
@@ -50,11 +55,24 @@ import matplotlib.pyplot as plt
 #res = np.multiply(data,varVector[:,None])
 
 # He dispersion is 4.23e-3 nm per pixel
-a = (np.arange(1024)-512)*4.23e-3 + 1083.
-waveVector = np.concatenate((a,a))
-waveMatrix = np.float32(np.repeat(waveVector[None,:],2048, axis=0))
-hdu = fits.PrimaryHDU(waveMatrix)
-hdu.writeto('data/wavecal/wavecal.fits',overwrite=True)
-waveMatrix.tofile('data/wavecal/wavecal.arr',sep="")
+#a = (np.arange(1024)-512)*4.23e-3 + 1083.
+#waveVector = np.concatenate((a,a))
+#waveMatrix = np.float32(np.repeat(waveVector[None,:],2048, axis=0))
+#hdu = fits.PrimaryHDU(waveMatrix)
+#hdu.writeto('data/wavecal/wavecal.fits',overwrite=True)
+#waveMatrix.tofile('data/wavecal/wavecal.arr',sep="")
 #fig, ax=plt.subplots()
 #ax.plot(np.arange(2048), waveVector)
+
+
+
+#x = np.array([0., 1, 2, 3])
+#y = np.array([-1, 0.2, .95, 2.1])
+#ym = np.ma.masked_array(y,mask=[0,0,1,0])
+#A = np.vstack([x, np.ones(len(x))]).T
+#print(A)
+#
+#m, c = np.linalg.lstsq(A, y)[0]
+#print(m, c)
+
+

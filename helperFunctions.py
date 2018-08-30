@@ -119,3 +119,16 @@ def matrixQuadfit(data,threshold=66000, mode="SLOW",ignoreRef=False):
     coefs[2] = (invCijperpix[4]*aij) + (invCijperpix[5]*bij) + (invCijperpix[2]*cij)
         
     return coefs[0], coefs[1], coefs[2]
+
+#ndrs = 4
+#test = np.ones((ndrs,2048,2048))
+#test = test + test*np.arange(ndrs)[:,None,None]+ test*(0.5*np.arange(ndrs)[:,None,None]**2)
+##test[5,0,0]=400
+#test[2,0,0]=300
+#test[3,0,0]=90
+##test[4,0,0]=20
+#test[1,2,0]=300
+#start = time.time()
+#res = matrixQuadfit(test[None,:,:,:],threshold=200, mode="FAST",ignoreRef=False)
+#end = time.time()
+#print(end - start)
