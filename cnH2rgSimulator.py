@@ -343,7 +343,7 @@ a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffse
               addThermalDark=True, addThermalDarkNoise=False,
               addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
               gainVariation=gainVariation,
-              spectrum=heSpectrum, fileFormat='arr')    
+              spectrum=heSpectrum, fileFormat='fits')    
 
 # flux tester
 #f1= 100
