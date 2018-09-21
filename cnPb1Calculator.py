@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 class cnPb1Calculator():
   def __init__(self,mode,ndr,coadd, rows, yCoord, pixelClkOscPulses, 
                betweenFrameDelay, rstrdrdIntegration, 
-               interspersedDelay, resetSettlePause, exposureTime=None):
+               interspersedDelay, exposureTime=None):
     """
     if exposure time is specified then the inter frame delay will be overwritten
     if ndr==None then maximizing but requires exposure time
@@ -39,7 +39,7 @@ class cnPb1Calculator():
     self.betweenFrameDelay = betweenFrameDelay     # number of 20 ns clock pulses
     self.rstrdrdIntegration = rstrdrdIntegration   # number of 20 ns clock pulses
     self.interspersedDelay = interspersedDelay     # 1us pulses
-    self.resetSettlePause = resetSettlePause       # number of 20 ns clock pulses
+#    self.resetSettlePause = resetSettlePause       # number of 20 ns clock pulses
     
     # slow mode calculations ##################################################
     if mode is 'slow':
@@ -78,9 +78,18 @@ class cnPb1Calculator():
       
       # calculate time for a ramp
       self.rampTime = (self.tFpgaReset+self.coadd*(self.ndr+1)*(self.frameTime)+
-                       self.coadd*((self.ndr-1)*self.betweenFrameDelayTime+self.interspersedDelay*2000))
+                       self.coadd*((self.ndr-1)*self.betweenFrameDelayTime+
+                                   self.interspersedDelay*2000))
       
-      self.firstPixelRead = self.tFpgaReset + self.frameTime + self.tFsynch + self.tVclk*self.yCoord + self.tVclk
+      self.firstFrameStart = self.tFpgaReset + self.frameTime
+      self.firstFrameEnd = self.tFpgaReset + 2*self.frameTime
+      self.firstPixelRead = self.tFpgaReset + self.frameTime + self.tFsynch + self.tVclk*self.yCoord + self.tVclk + (self.pixelClkOscPulses+1)*self.clockPulse
+      self.lastPixelRead = self.tFpgaReset + 2*self.frameTime - 2*(self.pixelClkOscPulses+1)*self.clockPulse
+      # frame time includes Fsynch, Vclk
+      self.timeVectorStart = (np.arange(self.ndr)*(self.frameTime+self.betweenFrameDelayTime) +
+                              self.firstPixelRead) 
+      self.timeVectorEnd = (np.arange(self.ndr)*(self.frameTime+self.betweenFrameDelayTime)+
+                            self.lastPixelRead)
     
     # fast mode calculations ##################################################
     elif mode is 'fast':
@@ -121,11 +130,18 @@ class cnPb1Calculator():
       
       # calculate time for a ramp
       self.rampTime = self.tFullFrameReset+(self.tFpgaReset+self.coadd*(self.ndr)*(self.frameTime)+
-                       self.coadd*((self.ndr)*self.betweenFrameDelayTime+self.interspersedDelay*1000))
+                       self.coadd*((self.ndr-1)*self.betweenFrameDelayTime+self.interspersedDelay*1000))
       
-      self.firstPixelRead = -99
-    
-    
+      self.firstFrameStart = self.tFullFrameReset + self.tFpgaReset 
+      self.firstFrameEnd = self.tFullFrameReset + self.tFpgaReset + self.frameTime
+      self.firstPixelRead = self.tFullFrameReset + self.tFpgaReset + self.tFsynch + self.tVclk*self.yCoord + self.tFirstDwell + self.tVclk + (self.pixelClkOscPulses+1)*self.clockPulse
+      self.lastPixelRead = self.tFullFrameReset + self.tFpgaReset + self.frameTime - self.tLastLow - 1.5*(self.pixelClkOscPulses+1)*self.clockPulse
+      # frame time includes Fsynch, Vclk
+      self.timeVectorStart = (np.arange(self.ndr)*(self.frameTime+self.betweenFrameDelayTime) +
+                              self.firstPixelRead) 
+      self.timeVectorEnd = (np.arange(self.ndr)*(self.frameTime+self.betweenFrameDelayTime)+
+                            self.lastPixelRead)
+#      self.timeVectorEnd[-1] = self.timeVectorEnd[-1] - self.betweenFrameDelayTime
     # line mode calculations ##################################################
     elif mode is 'rstrdrd':
       tFpgaReset = 2000      # time in ns
@@ -146,17 +162,7 @@ ndr = None
 coadd =1 
 rows = 2048
 ycoord = 0
-t = 0.08641 # exposure time given in seconds
-
-biasLevelOffsetScaling =  0. # realistic value is 0.001
-# bias, readnoise values given in ADU
-if mode is "slow":
-  biasLevel = 52000.
-  readNoise = 5. # 20e-
-elif mode is "fast":
-  biasLevel = 25000.
-  readNoise = 20. # 80e-
-
+t = 0.1 # exposure time given in seconds
 
 if mode is 'slow':
   # pcopf value
@@ -202,10 +208,17 @@ print('frame time [ms]',c.frameTime/1e6)
 print('frame rate [Hz]',c.frameRate) 
 print('ramp time [ms]',c.rampTime/1e6)
 print('#NDRs',c.ndr) 
-print('first pixel read after [us]',c.firstPixelRead*1000.)
+print('first frame start [ms]',c.firstFrameStart/1e6)
+print('first pixel read after [ms]',c.firstPixelRead/1e6)
+print('last pixel read after [ms]',c.lastPixelRead/1e6)
+print('first frame end [ms]',c.firstFrameEnd/1e6)
+
 print('in between frame dealy [ms]',c.betweenFrameDelayTime/1e6)
 try:
   print('requested exposure time [ms]',c.requestedExposureTime/1e6)
 except:
   print("No specific exposure time was requested")
 print('effective exposure time [ms]',c.exposureTime/1e6)
+print(c.timeVectorStart/1e6)
+print(c.timeVectorEnd/1e6)
+print((c.timeVectorEnd-c.timeVectorStart)/1e6)

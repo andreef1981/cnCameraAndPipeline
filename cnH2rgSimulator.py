@@ -154,9 +154,15 @@ class cnH2rgRamp():
                       self.addingSign*instrumentDark.frame + instrumentDarkNoiseFrame +
                       self.addingSign*thermalDark.frame + thermalDarkNoiseFrame +
                       self.addingSign*flatSignal.frame + flatSignalNoiseFrame)
+        if self.mode is "rstrdrd":
+          #TODO: conversion to 32 bit might need to happen earlier to get non overflowing calculations.
+          finalFrame = np.uint32(finalFrame)
+        else:
+          finalFrame = np.uint16(finalFrame)
         
-        finalFrame = np.uint16(finalFrame)#+readNoiseFrame)
         if fileFormat == 'fits':
+          #TODO: add the right fits header to the data
+          #TODO: change file names to naming convention given in MAN-0008
           self.writeFits(finalFrame,'data/', self.sequenceName+'-{0:05d}-{1:05d}'.format(j,i)+'.fits',overwrite=True)
         elif fileFormat == 'arr':
           self.writeBinary(finalFrame,'data/', self.sequenceName+'-{0:05d}-{1:05d}'.format(j,i)+'.arr')
