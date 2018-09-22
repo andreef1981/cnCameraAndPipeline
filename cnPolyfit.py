@@ -23,7 +23,7 @@ import time
 
 def cnPolyfit(ramp, order, mode, threshold):
   # currently only works for up to quadratic
-  start = time.time()
+#  start = time.time()
 
   # define x vector for fit
   x = np.arange(ramp.shape[0])
@@ -38,7 +38,10 @@ def cnPolyfit(ramp, order, mode, threshold):
     nanY = np.where(y >= threshold, np.nan, y)
     
   # now find first occurance of nan along the x axis
-  firstNan = nanY.argmax(axis=0)
+  #BUG: This only works if there actually is a nan otherwise the first entry
+  # might be the biggest entry <AFE 2018-09-21 a:AFE>
+  #firstNan = nanY.argmax(axis=0)
+  firstNan = np.sum(np.isfinite(nanY),axis=0)
   
   # are there any series where number of data points is not sufficient for 
   # order of polynom?
@@ -93,8 +96,8 @@ def cnPolyfit(ramp, order, mode, threshold):
   # reshape the fitted values
 #  fit = fit.reshape(ramp.shape[0],ramp.shape[1],ramp.shape[2])
   coef = coef.reshape(order+1,ramp.shape[1],ramp.shape[2])
-  end = time.time()
-  print(end - start)
+#  end = time.time()
+#  print(end - start)
   return coef
 
 #test = np.float32(np.arange(2048*2048*10).reshape((10,2048,2048)))
@@ -110,6 +113,6 @@ test[1,2,0]=300
 
 start = time.time()
 
-res = cnPolyfit(test, 2, "FAST", 200.)
+res = cnPolyfit(test, 2, "SLOW", 0.)
 end = time.time()
 #print(end - start)

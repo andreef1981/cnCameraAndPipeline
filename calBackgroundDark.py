@@ -72,6 +72,7 @@ def calBackgroundDark(data,
   
   
   #print('mean variance and std of variance', np.mean(np.var(data,axis=0)),np.std(np.var(data,axis=0)))
+  data = np.float32(data)
   averagedDark = np.average(data, axis=0)
   
   # for test purposes lets write the files to fits
@@ -86,8 +87,9 @@ def calBackgroundDark(data,
   return averagedDark
 
 
-#
-#b=cnH2rgRamps("data/backgroundDark/simBackgroundDark*",readMode="SLOW",subArray=None,verbose=True)
-#data=b.read()
-#c= calBackgroundDark(data, writeToFile=True, path='data/backgroundDark/',
-#                     sequenceName='masterBackgroundDark',fileFormat='arr')
+
+b=cnH2rgRamps("data/backgroundDark/simBackgroundDark*",
+              "fits",readMode="SLOW",subArray=None,verbose=True)
+data=b.read("fits")
+c= calBackgroundDark(data, writeToFile=True, path='data/backgroundDark/',
+                     sequenceName='masterBackgroundDark',fileFormat='arr')

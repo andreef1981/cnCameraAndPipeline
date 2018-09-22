@@ -28,6 +28,7 @@ class cnH2rgFrame():
 class cnH2rgRamps():
   def __init__(self, 
                    fileString,
+                   fileType,
                    readMode="SLOW", 
                    subArray=None, 
                    verbose=True):
@@ -38,7 +39,10 @@ class cnH2rgRamps():
     self.sequenceName = fileString
     
     # wild card search for Linux style folder structure
-    frameFiles = glob.glob(fileString+'*.fits')
+    if fileType is "fits":
+      frameFiles = glob.glob(fileString+'*.fits')
+    else:
+      frameFiles = glob.glob(fileString+'*.arr')
     
     # sort file into sequences and make sure all are the same length
     self.fileList = self.sortFileList(frameFiles)   
@@ -182,7 +186,7 @@ class cnH2rgRamps():
         
     return [coefs[0], coefs[1], coefs[2]]
     
-  def read(self, nSeqArr=None, dtype=np.uint16):
+  def read(self, fileType, nSeqArr=None, dtype=np.uint16):
 #    dtype = np.uint16
     if nSeqArr is None:
       nSeq = self.nSeq
@@ -197,7 +201,13 @@ class cnH2rgRamps():
         cur_file = self.files[i_seq][i_frame]
         if self.verbose:
           print('Reading', cur_file)
-        in_im = fits.open( cur_file )[0].data.astype(dtype)
+        if fileType is "fits":
+          in_im = fits.open( cur_file )[0].data.astype(dtype)
+        elif fileType is "arr":
+          in_im = np.fromfile(cur_file,dtype=dtype)
+          in_im = np.reshape(in_im,(self.xDim, self.yDim))
+        else:
+          raise ValueError("Unknown file type")
         
         # Trim image to subARray specification
         if self.subArray != None:

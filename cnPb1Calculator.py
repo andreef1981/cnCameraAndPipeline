@@ -153,16 +153,18 @@ class cnPb1Calculator():
     
     
     self.frameRate = 1/(self.frameTime/1e9)
+    self.rampRate = 1/(self.rampTime/1e9)
+    self.dutyCycle = self.exposureTime/self.rampTime
     
     
 #%%  
 
 mode = "fast"
-ndr = None
+ndr = 10
 coadd =1 
 rows = 2048
 ycoord = 0
-t = 0.1 # exposure time given in seconds
+t = None # exposure time given in seconds
 
 if mode is 'slow':
   # pcopf value
@@ -181,7 +183,7 @@ elif mode is 'fast':
   # -t value
   betweenFrameDelay = 0     # number of 20 ns clock pulses
   rstrdrdIntegration = None # number of 20 ns clock pulses
-  interspersedDelay = 1000  # 1us pulses
+  interspersedDelay = 0  # 1us pulses
 #  resetSettlePause = 0      # number of 20 ns clock pulses
   
 elif mode is 'rstrdrd':
@@ -191,7 +193,7 @@ elif mode is 'rstrdrd':
   betweenFrameDelay = None     # number of 20 ns clock pulses
   # -t value
   rstrdrdIntegration = 0    # number of 20 ns clock pulses
-  interspersedDelay = 1000  # 1us pulses
+  interspersedDelay = 0  # 1us pulses
 #  resetSettlePause = 0      # number of 20 ns clock pulses
   # make sure no coadding is implemented   
   coadd = None   
@@ -206,6 +208,8 @@ frameTime = c.frameTime
 print('line time [ms]',c.lineTime/1e6)  
 print('frame time [ms]',c.frameTime/1e6)
 print('frame rate [Hz]',c.frameRate) 
+print('ramp rate [Hz]',c.rampRate) 
+print('duty cycle (1.0 to 0)',c.dutyCycle) 
 print('ramp time [ms]',c.rampTime/1e6)
 print('#NDRs',c.ndr) 
 print('first frame start [ms]',c.firstFrameStart/1e6)
@@ -219,6 +223,5 @@ try:
 except:
   print("No specific exposure time was requested")
 print('effective exposure time [ms]',c.exposureTime/1e6)
+
 print(c.timeVectorStart/1e6)
-print(c.timeVectorEnd/1e6)
-print((c.timeVectorEnd-c.timeVectorStart)/1e6)
