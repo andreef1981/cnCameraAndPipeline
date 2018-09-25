@@ -31,23 +31,30 @@ class cnH2rgRamps():
                    fileType,
                    readMode="SLOW", 
                    subArray=None, 
-                   verbose=True):
+                   verbose=True,
+                   cssStyle=False,
+                   ramps=None,
+                   ndr=None):
     
     self.mode = readMode
     self.subArray = subArray
     self.verbose = verbose
     self.sequenceName = fileString
+    self.cssStyle = cssStyle
+    if self.cssStyle:
+      if (ramps is None) or (ndr is None):
+        raise ValueError("If data uses CSS naming convention then ramp and NDR information is required")
     
     # wild card search for Linux style folder structure
     if fileType is "fits":
       frameFiles = glob.glob(fileString+'*.fits')
     else:
-      frameFiles = glob.glob(fileString+'*.arr')
+      frameFiles = glob.glob(fileString+'*.raw')
     
     # sort file into sequences and make sure all are the same length
-    self.fileList = self.sortFileList(frameFiles)   
+    self.fileList = self.sortFileList(frameFiles, cssStyle=cssStyle)   
     # creat list of input files and determind nrNDR, nSeq
-    self.setFileList(self.fileList)
+    self.setFileList(self.fileList, ramps=ramps, ndr=ndr)
     
     if verbose:
       print(self.files)
@@ -187,68 +194,102 @@ class cnH2rgRamps():
     return [coefs[0], coefs[1], coefs[2]]
     
   def read(self, fileType, nSeqArr=None, dtype=np.uint16):
+    # 2018-09-24: add support for cssStyle naming file reads
 #    dtype = np.uint16
-    if nSeqArr is None:
+    if self.cssStyle is False:
+      if nSeqArr is None:
+        nSeq = self.nSeq
+        nSeqArr = range(nSeq)
+      else:
+        nSeq = len(nSeqArr)
+      all_ims = np.zeros([nSeq, self.nNdr, self.xDim, self.yDim], dtype=dtype)
+      
+      for i_frame in range(self.nNdr):
+        seqCounter=0
+        for i_seq in nSeqArr:
+          cur_file = self.files[i_seq][i_frame]
+          if self.verbose:
+            print('Reading', cur_file)
+          if fileType is "fits":
+            in_im = fits.open( cur_file )[0].data.astype(dtype)
+          elif fileType is "raw":
+            in_im = np.fromfile(cur_file,dtype=dtype)
+            in_im = np.reshape(in_im,(self.xDim, self.yDim))
+          else:
+            raise ValueError("Unknown file type")
+          
+          # Trim image to subARray specification
+          if self.subArray != None:
+            in_im = in_im[ self.subArray[1][0] : self.subArray[1][1],
+                             self.subArray[0][0] : self.subArray[0][1] ] 
+          all_ims[seqCounter, i_frame, :, :] = in_im
+          seqCounter += 1
+    else:
       nSeq = self.nSeq
       nSeqArr = range(nSeq)
-    else:
-      nSeq = len(nSeqArr)
-    all_ims = np.zeros([nSeq, self.nNdr, self.xDim, self.yDim], dtype=dtype)
-    
-    for i_frame in range(self.nNdr):
-      seqCounter=0
+      all_ims = np.zeros([nSeq, self.nNdr, self.xDim, self.yDim], dtype=dtype)
       for i_seq in nSeqArr:
-        cur_file = self.files[i_seq][i_frame]
-        if self.verbose:
-          print('Reading', cur_file)
-        if fileType is "fits":
-          in_im = fits.open( cur_file )[0].data.astype(dtype)
-        elif fileType is "arr":
-          in_im = np.fromfile(cur_file,dtype=dtype)
-          in_im = np.reshape(in_im,(self.xDim, self.yDim))
-        else:
-          raise ValueError("Unknown file type")
-        
-        # Trim image to subARray specification
-        if self.subArray != None:
-          in_im = in_im[ self.subArray[1][0] : self.subArray[1][1],
-                           self.subArray[0][0] : self.subArray[0][1] ] 
-        all_ims[seqCounter, i_frame, :, :] = in_im
-        seqCounter += 1
+        for i_frame in range(self.nNdr):
+          cur_file = self.files[i_seq*self.nNdr + i_frame]
+          if self.verbose:
+            print('Reading', cur_file)
+          if fileType is "fits":
+            in_im = fits.open( cur_file )[0].data.astype(dtype)
+          elif fileType is "raw":
+            in_im = np.fromfile(cur_file,dtype=dtype)
+            in_im = np.reshape(in_im,(self.xDim, self.yDim))
+          else:
+            raise ValueError("Unknown file type")
+          # Trim image to subARray specification
+          if self.subArray != None:
+            in_im = in_im[ self.subArray[1][0] : self.subArray[1][1],
+                             self.subArray[0][0] : self.subArray[0][1] ] 
+          all_ims[i_seq, i_frame, :, :] = in_im
+          
+      
     return all_ims
     
     
-  def setFileList(self, files=[]):
+  def setFileList(self, files=[], ramps=None, ndr=None):
     if len(files) == 0 or len(files[0]) == 0:
       raise ValueError("Expecting sequence(s) of fits files in list of list format")
     
     # Number of frame sequences
-    self.nSeq = len(files)
-    
-    # Check to make sure all file sequences are the same length
-    seq_lens = np.array( [ len( seq ) for seq in files ] )
-    if np.all(seq_lens == seq_lens[0]):
-      self.nNdr = int(seq_lens[0])
-      if self.verbose:
-        print("%d sequences of %d frames found..." % (self.nSeq, self.nNdr))
-    else:
-      raise ValueError("Not all sequences the same length")
+    if ramps is None:
+      self.nSeq = len(files)
+      # Check to make sure all file sequences are the same length
+      seq_lens = np.array( [ len( seq ) for seq in files ] )
+      if np.all(seq_lens == seq_lens[0]):
+        self.nNdr = int(seq_lens[0])
+        if self.verbose:
+          print("%d sequences of %d frames found..." % (self.nSeq, self.nNdr))
+      else:
+        raise ValueError("Not all sequences the same length")
 
-#    # Change the resulting sequence length to account for refernece frame start
-#    self.nNdr = self.nNdr - 1 - self.refFrame
-
-    # Complain if not enough frames
-    if self.nNdr < 1:
-      raise ValueError(str("Not enough images found to compute anything (reference frame set to %d)" % (self.refFrame)) )
+  #    # Change the resulting sequence length to account for refernece frame start
+  #    self.nNdr = self.nNdr - 1 - self.refFrame
+  
+      # Complain if not enough frames
+      if self.nNdr < 1:
+        raise ValueError(str("Not enough images found to compute anything (reference frame set to %d)" % (self.refFrame)) )
+      
+      
+    else: 
+      self.nSeq = ramps
+      # Check that we have the right amount of files
+      if len(files) != ramps*ndr:
+        raise ValueError("Ramps time NDR does not match length of file list")
+      self.nNdr = ndr
     
     self.files = files
     
-  def sortFileList(self,frame_files):
+  def sortFileList(self,frame_files,cssStyle=False):
     # - - - Sort files into sequences, make sure all are the same length
     # Assuming all fileneames are the same format 
     # [path][prefix]-[seq nu (2+ digits)-[frame number (4 digits)].fits
     # (08-29 Found out not true) The sequence number should always be [-12:-10] in the string
     # Have to use a strategy of splitting on dashes to get the sequence number
+    # For cssStyle true put files in the one long single list
     
     # TODO: add some error checking to make sure correct format
     
@@ -256,20 +297,25 @@ class cnH2rgRamps():
     # Store them in a set ( keeps only the unique ones )
     # 2017-07-28: Turn them back into a list and sort them so we get in order
     # 2017-08-29: Sequences aren't always 2 digits, split on dashes
-    uniq_seq_nums = list(set( [ x.split("-")[-2] for x in frame_files ] ))
-    uniq_seq_nums.sort()
+    # 2018-09-24: Add support for CSS name convention
+    if not cssStyle:
+      uniq_seq_nums = list(set( [ x.split("-")[-2] for x in frame_files ] ))
+      uniq_seq_nums.sort()
+      
+     # nSeq = len(uniq_seq_nums)
+      
+      files = []
+      
+      for i_seq, seq_num in enumerate(uniq_seq_nums):
+        files.append([])
     
-   # nSeq = len(uniq_seq_nums)
-    
-    files = []
-    
-    for i_seq, seq_num in enumerate(uniq_seq_nums):
-      files.append([])
-  
-      for cur_file in frame_files:
-        if cur_file.split("-")[-2] == seq_num:
-          files[i_seq].append(cur_file)
-      files[i_seq].sort()
+        for cur_file in frame_files:
+          if cur_file.split("-")[-2] == seq_num:
+            files[i_seq].append(cur_file)
+        files[i_seq].sort()
+    else:
+      files = frame_files
+      files.sort()
     
     return files
 

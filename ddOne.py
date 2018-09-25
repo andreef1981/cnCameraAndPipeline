@@ -6,25 +6,25 @@ Created on Thu Sep 20 14:14:01 2018
 @author: Andre Fehlmann (afehlmann@nso.edu)
 Revision history
 ----------------
-15 August 2018:
-    Removed instrument dark as it is contained in the background dark already.
-    Andre
+20 September 2018
+  created a single plugin for the first part of the detailed display reduction
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-from cnPipeline import *
+#import matplotlib.pyplot as plt
+#from cnPipeline import *
 from helperFunctions import *
-from datetime import datetime
+#from datetime import datetime
 
 def ddOne(data,
           linThreshold,
           mode,
           backgroundDark,
           gainTable,
-          waveCal,
-          beamMapping,
           badPixels,
+          camera,
+          waveCal=None,
+          beamMapping=None,
           debug=False,
           logPath=None):
   
@@ -47,19 +47,32 @@ def ddOne(data,
         3D data cube that contains the background dark ramp with the exact same
         camera setup as the data cube. Has to be linearity corrected.
     gainTable : (2048, 2048) ndarray, float32
-        output from GAIN3 calibration task
+        output from GAIN calibration task
         normalized gain table to correct gain variation (multiplicative)
-    waveCal : (2048, 2048) ndarray, float32
+    badPixels : (2048, 2048) ndarray, uint8
+        array containing the good and bad pixels
+    camera : string
+        string describing which instrument is used "SP" or "CI"
+    waveCal : (2048, 2048) ndarray, float32, default None
         output from WAVECAL calibration task describing what the wavelength
         at each pixel is
-    beamMapping : (2, 2048, 2048) ndarray, float32
+        Only applicable to SP
+    beamMapping : (2, 2048, 2048) ndarray, float32, default None
         output from ALIGN3 calibration task
         information describing how left and right side of beam match.
+        Only applicable to SP
+    debug : boolean, default False
+        printing debug messages 
+    logPath : string, default None
+        if None, printing to standard output, if path provided write to ddOne.log
+        
         
     Returns
     -------
     result : (2048, 2048) ndarray, float32
         Fully corrected image
+    waveVector : (2048,) ndarray, float32
+        vector containing the wavelength at each pixel
 
     Raises
     ------
@@ -93,8 +106,9 @@ def ddOne(data,
 
   ################# 1. make some checks and conversions #######################
   # make sure the data cubes have the same dimensions
-  assert(data.shape == backgroundDark.shape),\
-  "background dark array has not the same dimension as the data cube"
+  #TODO: fast mode has shorter sequence 
+#  assert(data.shape == backgroundDark.shape),\
+#  "background dark array has not the same dimension as the data cube"
   # check data types
   assert(backgroundDark.dtype == np.float32()),\
   "background dark data type is not float32"
@@ -104,7 +118,7 @@ def ddOne(data,
   data = np.float32(data)
   
   ################# 2. reference pixel correction #############################
-  # needed for slow mode only
+  # needed for slow mode only?
   if mode is "SLOW":
     #do something
     data = data
@@ -117,16 +131,36 @@ def ddOne(data,
     
   
   ################# 3. make the linearity correction ##########################  
+  
   # in this case we use the NDR number as our 'time' axis
   dataTime = np.arange(data.shape[0])
+  
+  if mode is not "SLOW":
+    # fast mode does not use the first frame
+    data = data[1:,:,:]
+    # time vector is shorter but must maintain the values
+    dataTime = dataTime[1:]
+  
+  # Check for order of correction
+  if len(dataTime) == 2:
+    order = 1
+  elif len(dataTime) > 2:
+    order = 2
+  else:
+    raise ValueError("sequence to short to apply polyfit")
+    
   # Do quadratic fit, use data up to threshold
-  coef = cnPolyfit(data, 2, mode, linThreshold)
-  nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-  linearityCorrected = data - nonLinear
-  linearityCorrectedTwo = coef[1,:,:]*dataTime[-1]
+  coef = cnPolyfit(data, order, mode, linThreshold)
+  if order == 2:
+    nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
+    linearityCorrected = data - nonLinear
+  else:
+    linearityCorrected = data 
+#  linearityCorrectedTwo = coef[1,:,:]*dataTime[-1]
   
   #NOTE: linearized last - first frame is not exactly the same as
   #      linear coefficient * time
+  
 #  print(linearityCorrected[0,0,0]-linearityCorrected[-1,0,0])
 #  print(coef[1,0,0]*dataTime[-1])
   
@@ -152,6 +186,9 @@ def ddOne(data,
   
 
   ################# 6. wavecal and beam mapping ###############################
+  if camera is "SP":
+    # for now just use the center row
+    waveVector = waveCal[1024,:]
   
   if debug:
     try:
@@ -163,38 +200,52 @@ def ddOne(data,
       print("result minimum is "+str(np.min(result)))
       print("result median "+str(np.median(result)))
   
-  return result
+  return result, waveVector
   
 linThreshold = 0
 mode = "SLOW"
+#######run this first with second part commented because spSpectrum sequence
+# is too long for a single call to ddOne
 
-
-waveCal = np.ones((10,10),dtype="float32")
-beamMapping = np.ones((2,10,10),dtype="float32")
-badPixels = np.ones((10,10),dtype="uint8")
-
-## reading the data
-#a=cnH2rgRamps("data/spectra/simSpectrum*",
-#              "fits",readMode="SLOW",subArray=None,verbose=True)
+### reading the data
+## cssStyle needs ramps and ndr information
+#a=cnH2rgRamps("data/coronalObs-sensitivity/spSpectrum",
+#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#              ramps=8, ndr=2)
 #data = np.squeeze(a.read("fits",dtype=np.uint16))
 ## reading the background data
-#b=cnH2rgRamps("data/backgroundDark/masterBackgroundDark*",
-#              "arr",readMode="SLOW",subArray=None,verbose=True)
-#backgroundDark = np.squeeze(b.read("arr",dtype=np.float32))
-#gainTable = in_im = fits.open("data/gain/gain3Table.fits")[0].data.astype(np.float32)
+#b=cnH2rgRamps("data/coronalObs-sensitivity/spMasterBackgroundDark",
+#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#              ramps=1, ndr=2)
+#backgroundDark = np.squeeze(b.read("fits",dtype=np.float32))
+#
+#gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+#
+#waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
+#
+#badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
+#
+#c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
+#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#              ramps=1, ndr=2)
+#beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
+#data = np.squeeze(data[0,:,:,:])
 
-result = ddOne(data,
-               linThreshold,
-               mode,
-               backgroundDark,
-               gainTable,
-               waveCal,
-               beamMapping,
-               badPixels,
-               debug=True,
-               logPath=None)
 
-fig, ax=plt.subplots()
-plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
-fig, ax=plt.subplots()
-plt.imshow(result, vmin=0.,vmax=40000.)
+########## run this after first part with first part commented
+
+#result,wavevector = ddOne(data,
+#                          linThreshold,
+#                          mode,
+#                          backgroundDark,
+#                          gainTable,
+#                          waveCal,
+#                          beamMapping,
+#                          badPixels,
+#                          debug=True,
+#                          logPath=None)
+#
+##fig, ax=plt.subplots()
+##plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
+#fig, ax=plt.subplots()
+#plt.imshow(result, vmin=0.,vmax=4000.)

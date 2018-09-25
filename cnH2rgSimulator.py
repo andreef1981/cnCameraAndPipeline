@@ -163,10 +163,15 @@ class cnH2rgRamp():
         if fileFormat == 'fits':
           #TODO: add the right fits header to the data
           #TODO: change file names to naming convention given in MAN-0008
-          self.writeFits(finalFrame,'data/', self.sequenceName+'-{0:05d}-{1:05d}'.format(j,i)+'.fits',overwrite=True)
-        elif fileFormat == 'arr':
-          self.writeBinary(finalFrame,'data/', self.sequenceName+'-{0:05d}-{1:05d}'.format(j,i)+'.arr')
+#          self.writeFits(finalFrame,'data/', self.sequenceName+'-{0:05d}-{1:05d}'.format(j,i)+'.fits',overwrite=True)
+          self.writeFits(finalFrame,'data/', self.sequenceName+'.{0:03d}'.format(j*self.ndr+i)+'.fits',overwrite=True)
 
+        elif fileFormat == 'raw':
+#          self.writeBinary(finalFrame,'data/', self.sequenceName+'-{0:05d}-{1:05d}'.format(j,i)+'.raw')
+          self.writeBinary(finalFrame,'data/', self.sequenceName+'.{0:03d}'.format(j*self.ndr+i)+'.raw')
+        elif fileFormat == "both":
+          self.writeFits(finalFrame,'data/', self.sequenceName+'.{0:03d}'.format(j*self.ndr+i)+'.fits',overwrite=True)
+          self.writeBinary(finalFrame,'data/', self.sequenceName+'.{0:03d}'.format(j*self.ndr+i)+'.raw')
           
   
   
@@ -267,10 +272,9 @@ class cnPb1Calculator():
 #%%  
 
 mode = "slow"
-ndr = 10
+ndr = 4
 coadd =1
-
-nrSequences = 3
+nrSequences = 9
 frameRate = 12.
 arrayTemperature = 130. 
 rows = 2048
@@ -327,12 +331,20 @@ print('first pixel read after [us]',c.firstPixelRead*1000.)
 print('in between frame dealy [ms]',c.betweenFrameDelayTime/1e6)
 print('exposure time [ms]',c.exposureTime/1e6)
 
-nrSequences = 1
+
+#nrSequences = 3
 #sequenceName = "/instrumentDark/simInstrumentDark"
 #sequenceName = "/backgroundDark/simBackgroundDark"
 #sequenceName = "/flatSignal/simFlatSignal"
 #sequenceName = "/gain/simGainVariation"
-sequenceName = "/spectra/simSpectrum"
+#sequenceName = "/spectra/simSpectrum"
+#sequenceName = "/coronalObs-sensitivity/ciBackgroundDark"
+#sequenceName = "/coronalObs-sensitivity/spBackgroundDark"
+#sequenceName = "/coronalObs-sensitivity/spGain3"
+#sequenceName = "/coronalObs-sensitivity/ciGain1"
+#sequenceName = "/coronalObs-sensitivity/spSpectrum"
+sequenceName = "/coronalObs-sensitivity/ciImage"
+
 
 # create fixe gain variation
 #varVector = np.random.normal(loc=1.0, scale=0.1, size=2048)
@@ -346,10 +358,10 @@ gainVariation = fits.open("data/gain/2048row_gainVariation.fits")[0].data.astype
 a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
              arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
              addInstrumentDark=True,addInstrumentDarkNoise=False,
-              addThermalDark=True, addThermalDarkNoise=False,
-              addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
-              gainVariation=gainVariation,
-              spectrum=heSpectrum, fileFormat='fits')    
+             addThermalDark=True, addThermalDarkNoise=False,
+             addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
+             gainVariation=gainVariation,
+             spectrum=heSpectrum, fileFormat='both')    
 
 # flux tester
 #f1= 100
