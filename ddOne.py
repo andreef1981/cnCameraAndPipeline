@@ -15,6 +15,7 @@ import numpy as np
 #from cnPipeline import *
 from helperFunctions import *
 #from datetime import datetime
+#from astropy.io import fits
 
 def ddOne(data,
           linThreshold,
