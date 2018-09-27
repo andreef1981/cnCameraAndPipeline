@@ -348,6 +348,7 @@ sequenceName = "/coronalObs-sensitivity/ciImage"
 
 # create fixe gain variation
 #varVector = np.random.normal(loc=1.0, scale=0.1, size=2048)
+#varVector[:,:1024]=varVector[:,:1024]*0.95
 #hdu = fits.PrimaryHDU(varVector)
 #hdu.writeto('data/gain/2048row_gainVariation.fits',overwrite=True)
 
@@ -363,20 +364,3 @@ a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffse
              gainVariation=gainVariation,
              spectrum=heSpectrum, fileFormat='both')    
 
-# flux tester
-#f1= 100
-#f2 = 200
-#a = -5e-4
-#b = 4  
-#c = 0     
-#t = np.arange(0,20.1, 0.1)
-#t1 = f1*t
-#t2 = f2*t
-##adu = a*t**2 + b*t +c
-#adu1 = a*t1**2. + b*t1 + c
-#adu2 = a*t2**2. + b*t2 + c
-#fig, ax=plt.subplots()
-#ax.plot(t,adu1, t, adu2, 'r')
-##ax.plot(t,adu)
-#plt.show()
-      
