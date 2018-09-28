@@ -11,9 +11,9 @@ Revision history
     
 """
 import numpy as np
-#from astropy.io import fits
-#import matplotlib.pyplot as plt
-#from cnPipeline import *
+from astropy.io import fits
+import matplotlib.pyplot as plt
+from cnPipeline import *
 from helperFunctions import *
 
 def calGain1(data,
@@ -214,44 +214,44 @@ def calGain1(data,
   
   return newGain, changeFlag
 
-### reading the data
-## cssStyle needs ramps and ndr information
-#a=cnH2rgRamps("data/coronalObs-sensitivity/ciMasterBackgroundDark",
-#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=1, ndr=4)
-#dark = np.squeeze(a.read("fits",dtype=np.uint16))
-#
-#b=cnH2rgRamps("data/coronalObs-sensitivity/ciGain1",
-#              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-#              ramps=5, ndr=4)
-#data=b.read("fits",dtype=np.uint16)
-#
-#
-#
-#linThreshold = 0
-#mode = "SLOW"
-#stagePositionFM1A = np.arange(5)
-#stagePositionFM1B = np.arange(5)
-#badPixels = np.zeros((2048,2048),dtype="uint8")
-#oldGain = np.ones((2048,2048),dtype="float32")
-#
-#c= calGain1(data,
-#            stagePositionFM1A,
-#            stagePositionFM1B,
-#            dark,
-#            badPixels,
-#            oldGain,
-#            linThreshold,
-#            mode,
-#            changeThreshold=None,
-#            simulateChange=False,
-#            debug=True,
-#            logPath=None,
-#            writeToFile=True,
-#            filePath="data/coronalObs-sensitivity/",
-#            sequenceName="ciMasterGain1",
-#            fileFormat="both")
-#  
-#fig, ax=plt.subplots()
-#plt.imshow(c[0],vmin=0.9, vmax=1.1)
-#plt.show()
+## reading the data
+# cssStyle needs ramps and ndr information
+a=cnH2rgRamps("data/coronalObs-sensitivity/ciMasterBackgroundDark",
+              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+              ramps=1, ndr=4)
+dark = np.squeeze(a.read("fits",dtype=np.uint16))
+
+b=cnH2rgRamps("data/coronalObs-sensitivity/ciGain1",
+              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
+              ramps=5, ndr=4)
+data=b.read("fits",dtype=np.uint16)
+
+
+
+linThreshold = 0
+mode = "SLOW"
+stagePositionFM1A = np.arange(5)
+stagePositionFM1B = np.arange(5)
+badPixels = np.zeros((2048,2048),dtype="uint8")
+oldGain = np.ones((2048,2048),dtype="float32")
+
+c= calGain1(data,
+            stagePositionFM1A,
+            stagePositionFM1B,
+            dark,
+            badPixels,
+            oldGain,
+            linThreshold,
+            mode,
+            changeThreshold=None,
+            simulateChange=False,
+            debug=True,
+            logPath=None,
+            writeToFile=True,
+            filePath="data/coronalObs-sensitivity/",
+            sequenceName="ciMasterGain1",
+            fileFormat="both")
+  
+fig, ax=plt.subplots()
+plt.imshow(c[0],vmin=0.9, vmax=1.1)
+plt.show()

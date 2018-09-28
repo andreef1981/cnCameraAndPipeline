@@ -19,8 +19,8 @@ Revision history
     
 """
 import numpy as np
-#from astropy.io import fits
-#from cnPipeline import *
+from astropy.io import fits
+from cnPipeline import *
 from helperFunctions import *
 
 
@@ -175,18 +175,18 @@ def calBackgroundDark(data,
 
 
 
-#b=cnH2rgRamps("data/coronalObs-sensitivity/ciBackgroundDark",
-#              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-#              ramps=3, ndr=4)
-#data=b.read("fits",dtype=np.uint16)
-#linThreshold = 0
-#mode = "SLOW"
-#c= calBackgroundDark(data,
-#                     linThreshold,
-#                     mode,
-#                     debug=True,
-#                     logPath=None,
-#                     writeToFile=True,
-#                     filePath='data/coronalObs-sensitivity/',
-#                     sequenceName='ciMasterBackgroundDark',
-#                     fileFormat="both")
+b=cnH2rgRamps("data/coronalObs-sensitivity/ciBackgroundDark",
+              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
+              ramps=3, ndr=4)
+data=b.read("fits",dtype=np.uint16)
+linThreshold = 0
+mode = "SLOW"
+c= calBackgroundDark(data,
+                     linThreshold,
+                     mode,
+                     debug=True,
+                     logPath=None,
+                     writeToFile=True,
+                     filePath='data/coronalObs-sensitivity/',
+                     sequenceName='ciMasterBackgroundDark',
+                     fileFormat="both")

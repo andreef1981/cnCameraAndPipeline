@@ -274,7 +274,7 @@ class cnPb1Calculator():
 mode = "slow"
 ndr = 4
 coadd =1
-nrSequences = 9
+nrSequences = 1
 frameRate = 12.
 arrayTemperature = 130. 
 rows = 2048
@@ -342,9 +342,9 @@ print('exposure time [ms]',c.exposureTime/1e6)
 #sequenceName = "/coronalObs-sensitivity/spBackgroundDark"
 #sequenceName = "/coronalObs-sensitivity/spGain3"
 #sequenceName = "/coronalObs-sensitivity/ciGain1"
-#sequenceName = "/coronalObs-sensitivity/spSpectrum"
-sequenceName = "/coronalObs-sensitivity/ciImage"
-
+#sequenceName = "/coronalObs-sensitivity/spObserve"
+sequenceName = "/coronalObs-sensitivity/ciObserve"
+#sequenceName = "/generic/observe"
 
 # create fixe gain variation
 #varVector = np.random.normal(loc=1.0, scale=0.1, size=2048)
@@ -354,7 +354,9 @@ sequenceName = "/coronalObs-sensitivity/ciImage"
 
 heSpectrum = fits.open("data/spectra/he_spectrum_combined-32bitfloat.fits")[0].data.astype(np.float32)
 gainVariation = fits.open("data/gain/2048row_gainVariation.fits")[0].data.astype(np.float32)
-
+siSpectrum = np.load("data/spectra/modulated-8-SiIX.npy")
+siSpectrum = np.tile(siSpectrum[0,:],(2048,1))
+#plt.imshow(siSpectrum)
 #TODO: instrument dark noise has issue with non matching array sizes
 a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
              arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
@@ -362,5 +364,15 @@ a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffse
              addThermalDark=True, addThermalDarkNoise=False,
              addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
              gainVariation=gainVariation,
-             spectrum=heSpectrum, fileFormat='both')    
+             spectrum=siSpectrum, fileFormat='both')    
+
+# Generic data set
+#a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
+#             arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
+#             addInstrumentDark=True,addInstrumentDarkNoise=False,
+#             addThermalDark=True, addThermalDarkNoise=False,
+#             addFlatQuadraticSignal=True,quadraticCoeff=[100,500.,0], addFlatQuadraticNoise=False,
+#             gainVariation=gainVariation,
+#             spectrum=siSpectrum, fileFormat='both')    
+
 

@@ -11,11 +11,11 @@ Revision history
 """
 
 import numpy as np
-#import matplotlib.pyplot as plt
-#from cnPipeline import *
+import matplotlib.pyplot as plt
+from cnPipeline import *
 from helperFunctions import *
-#from datetime import datetime
-#from astropy.io import fits
+from datetime import datetime
+from astropy.io import fits
 
 def ddOne(data,
           linThreshold,
@@ -190,7 +190,9 @@ def ddOne(data,
   if camera is "SP":
     # for now just use the center row
     waveVector = waveCal[1024,:]
-  
+  else:
+    waveVector = 0
+    
   if debug:
     try:
       file.write("result maximum is "+str(np.max(result))+"\n")
@@ -203,28 +205,27 @@ def ddOne(data,
   
   return result, waveVector
   
-linThreshold = 0
-mode = "SLOW"
+
 #######run this first with second part commented because spSpectrum sequence
 # is too long for a single call to ddOne
 
-### reading the data
-## cssStyle needs ramps and ndr information
-#a=cnH2rgRamps("data/coronalObs-sensitivity/spSpectrum",
+## reading the data
+# cssStyle needs ramps and ndr information
+#a=cnH2rgRamps("data/coronalObs-sensitivity/ciObserve",
 #              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=8, ndr=2)
+#              ramps=72, ndr=4)
 #data = np.squeeze(a.read("fits",dtype=np.uint16))
 ## reading the background data
-#b=cnH2rgRamps("data/coronalObs-sensitivity/spMasterBackgroundDark",
+#b=cnH2rgRamps("data/coronalObs-sensitivity/ciMasterBackgroundDark",
 #              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=1, ndr=2)
+#              ramps=1, ndr=4)
 #backgroundDark = np.squeeze(b.read("fits",dtype=np.float32))
 #
-#gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+#gainTable = in_im = fits.open("data/coronalObs-sensitivity/ciMasterGain1.000.fits")[0].data.astype(np.float32)
 #
 #waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
 #
-#badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
+#badPixels = fits.open("data/coronalObs-sensitivity/ciBadPixels.000.fits")[0].data.astype(np.uint8)
 #
 #c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
 #              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
@@ -233,20 +234,23 @@ mode = "SLOW"
 #data = np.squeeze(data[0,:,:,:])
 
 
-########## run this after first part with first part commented
+######### run this after first part with first part commented
+linThreshold = 0
+mode = "SLOW"
+camera = "CI"
+result,wavevector = ddOne(data,
+                          linThreshold,
+                          mode,
+                          backgroundDark,
+                          gainTable,
+                          badPixels,
+                          camera,
+                          waveCal,
+                          beamMapping,
+                          debug=True,
+                          logPath=None)
 
-#result,wavevector = ddOne(data,
-#                          linThreshold,
-#                          mode,
-#                          backgroundDark,
-#                          gainTable,
-#                          waveCal,
-#                          beamMapping,
-#                          badPixels,
-#                          debug=True,
-#                          logPath=None)
-#
-##fig, ax=plt.subplots()
-##plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
 #fig, ax=plt.subplots()
-#plt.imshow(result, vmin=0.,vmax=4000.)
+#plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
+fig, ax=plt.subplots()
+plt.imshow(result, vmin=0.,vmax=7000.)
