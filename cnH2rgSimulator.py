@@ -138,7 +138,10 @@ class cnH2rgRamp():
                           (i*self.frameTime)**2.*quadraticCoeff[0])
          
           if spectrum is not None:
-            flatSignal.frame = flatSignal.frame * spectrum
+            if len(spectrum.shape) > 2:
+              flatSignal.frame = flatSignal.frame * spectrum[j,:,:]
+            else:
+              flatSignal.frame = flatSignal.frame * spectrum
           # TODO: Add slit rotation
           # TODO: Add slit curvature
           # TODO: Add pinhole spectra
@@ -185,102 +188,12 @@ class cnH2rgRamp():
     #hdul = fits.HDUList([hdu])
     hdu.writeto(filepath+filename,overwrite=overwrite)
 
-#%%   
-class cnPb1Calculator():
-  def __init__(self,mode,ndr,coadd, rows, yCoord, pixelClkOscPulses, 
-               resetLength, betweenFrameDelay, rstrdrdIntegration, 
-               interspersedDelay, resetSettlePause, exposureTime=None):
-    # internally all times are stored in ns
-    # exposure time has to be entered in seconds
-    self.mode = mode
-    self.clockPulse = 20 # 20ns clock pulses
-    self.ndr = ndr
-    self.coadd = coadd
-    self.channelWidth = 64     # in pixel
-    self.rows = rows
-    self.yCoord = yCoord
-    assert (self.rows <= 2048 - self.yCoord), "Number of rows is too big for chosen yCoordinate."
-    self.pixelClkOscPulses = pixelClkOscPulses
-    self.resetLength = resetLength
-    self.betweenFrameDelay = betweenFrameDelay     # number of 20 ns clock pulses
-    self.rstrdrdIntegration = rstrdrdIntegration   # number of 20 ns clock pulses
-    self.interspersedDelay = interspersedDelay     # 1us pulses
-    self.resetSettlePause = resetSettlePause       # number of 20 ns clock pulses
-    
-    # slow mode calculations ##################################################
-    if mode is 'slow':
-      tFpgaReset = 2000      # time in ns
-      tFsynch = 620          # time in ns
-      tVclk = 420            # time in ns
-      tFirstDwell = None     # time in ns
-      tLastLow = None        # time in ns
-      self.lineTime = (tVclk+(self.channelWidth+2)*(self.pixelClkOscPulses+1)*self.clockPulse)
-      # tVclk*yCoord is time to address (move to) first row of subarray
-      self.frameTime = (tFsynch+self.yCoord*tVclk+self.rows*self.lineTime)
-      if exposureTime is not None:
-        self.exposureTime = exposureTime*1e9  # time is in ms
-        self.betweenFrameDelayTime = (self.exposureTime/(self.ndr-1) - self.interspersedDelay*2000. - self.frameTime)
-        self.betweenFrameDelay = self.betweenFrameDelayTime/self.clockPulse
-        assert (self.betweenFrameDelayTime >= 0.), "Timing ERROR: Exposur time too short."
-      else:
-        self.betweenFrameDelayTime = self.betweenFrameDelay*self.clockPulse
-        self.exposureTime = (self.ndr-1)*(self.betweenFrameDelayTime+ self.interspersedDelay*2000. + self.frameTime)
-      #!!! check the in between multiplicator should be ndr-1
-      self.totalbetweenFrameDelayTime = self.betweenFrameDelayTime+ self.interspersedDelay*2000.
-      self.rampTime = (tFpgaReset+self.coadd*(self.ndr+1)*(self.frameTime)+
-                       self.coadd*((self.ndr-1)*self.betweenFrameDelay*self.clockPulse+self.interspersedDelay*2000))
-      
-      self.firstPixelRead = tFpgaReset + tFsynch + tVclk*self.yCoord + tVclk
-    
-    # fast mode calculations ##################################################
-    elif mode is 'fast':
-      tFpgaReset = 2000      # time in ns
-      tFsynch = 320          # time in ns
-      tVclk = 220            # time in ns
-      tFirstDwell = 2040     # time in ns
-      tLastLow = 120         # time in ns
-      self.lineTime = (tVclk+tFirstDwell+tLastLow+(self.channelWidth+1.5)*(self.pixelClkOscPulses+1)*self.clockPulse)
-      self.frameTime = (tFsynch+self.yCoord*tVclk+(self.rows+1)*self.lineTime)
-      if exposureTime is not None:
-        self.exposureTime = exposureTime*1e9  # time is in ms
-        self.betweenFrameDelayTime = (self.exposureTime/(self.ndr-1) - self.interspersedDelay*1000. - self.frameTime)
-        self.betweenFrameDelay = self.betweenFrameDelayTime/self.clockPulse
-        assert (self.betweenFrameDelayTime >= 0.), "Timing ERROR: Exposur time too short."
-      else:
-        self.betweenFrameDelayTime = self.betweenFrameDelay*self.clockPulse
-        self.exposureTime = (self.ndr-1)*(self.betweenFrameDelayTime+ self.interspersedDelay*1000. + self.frameTime)
-      # !!! check the in between multiplicator should be ndr-1 
-      self.totalbetweenFrameDelayTime = self.betweenFrameDelayTime+ self.interspersedDelay*2000.
-      self.rampTime = (tFpgaReset + self.coadd*(self.ndr*self.frameTime +
-                         (self.resetLength+self.resetSettlePause)*self.clockPulse) +
-                         self.coadd*((self.ndr-1)*self.betweenFrameDelay*self.clockPulse + self.interspersedDelay*1000))
-      self.firstPixelRead = -99.
-    
-    # line mode calculations ##################################################
-    elif mode is 'rstrdrd':
-      tFpgaReset = 2000      # time in ns
-      tFsynch = 320          # time in ns
-      tVclk = 220            # time in ns
-      tFirstDwell = 2040     # time in ns
-      tLastLow = 120         # time in ns
-      self.firstPixelRead = -99.
-    
-    
-    self.frameRate = 1/(self.frameTime/1e9)
-    
-    
-#%%  
+
 
 mode = "slow"
 ndr = 4
-coadd =1
 nrSequences = 1
-frameRate = 12.
 arrayTemperature = 130. 
-rows = 2048
-ycoord = 0
-t = None
-
 biasLevelOffsetScaling =  0. # realistic value is 0.001
 # bias, readnoise values given in ADU
 if mode is "slow":
@@ -291,48 +204,8 @@ elif mode is "fast":
   readNoise = 20. # 80e-
 
 
-if mode is 'slow':
-  pixelClkOscPulses = 150.  # number of 20 ns clock pulses
-  resetLength = None        # number of 20 ns clock pulses
-  betweenFrameDelay = 0     # number of 20 ns clock pulses
-  rstrdrdIntegration = None # number of 20 ns clock pulses
-  interspersedDelay = 1000  # 1us pulses
-  resetSettlePause = 0      # number of 20 ns clock pulses
-    
-elif mode is 'fast':
-  pixelClkOscPulses = 28.   # number of 20 ns clock pulses
-  resetLength = 1000        # number of 20 ns clock pulses
-  betweenFrameDelay = 0     # number of 20 ns clock pulses
-  rstrdrdIntegration = None # number of 20 ns clock pulses
-  interspersedDelay = 1000  # 1us pulses
-  resetSettlePause = 0      # number of 20 ns clock pulses
-  
-elif mode is 'rstrdrd':
-  pixelClkOscPulses = 28.   # number of 20 ns clock pulses
-  resetLength = 1000        # number of 20 ns clock pulses
-  betweenFrameDelay = 0     # number of 20 ns clock pulses
-  rstrdrdIntegration = 0    # number of 20 ns clock pulses
-  interspersedDelay = 1000  # 1us pulses
-  resetSettlePause = 0      # number of 20 ns clock pulses   
-  coadd = None   
-
-# specifying exposureTime overwrites betweenFrameDelay
-# provide exposureTime in [seconds]
-c = cnPb1Calculator(mode, ndr, coadd, rows, ycoord, pixelClkOscPulses, 
-               resetLength, betweenFrameDelay, rstrdrdIntegration, 
-               interspersedDelay, resetSettlePause, exposureTime=t)
-frameTime = c.frameTime
-frameDelay = c.totalbetweenFrameDelayTime
-print('line time [ms]',c.lineTime/1e6)  
-print('frame time [ms]',c.frameTime/1e6)
-print('frame rate [Hz]',c.frameRate) 
-print('ramp time [ms]',c.rampTime/1e6)
-print('first pixel read after [us]',c.firstPixelRead*1000.)
-print('in between frame dealy [ms]',c.betweenFrameDelayTime/1e6)
-print('exposure time [ms]',c.exposureTime/1e6)
-
-
-#nrSequences = 3
+frameTime = np.load("frameTime.npy")
+frameDelay = 0.
 #sequenceName = "/instrumentDark/simInstrumentDark"
 #sequenceName = "/backgroundDark/simBackgroundDark"
 #sequenceName = "/flatSignal/simFlatSignal"
@@ -343,8 +216,10 @@ print('exposure time [ms]',c.exposureTime/1e6)
 #sequenceName = "/coronalObs-sensitivity/spGain3"
 #sequenceName = "/coronalObs-sensitivity/ciGain1"
 #sequenceName = "/coronalObs-sensitivity/spObserve"
-sequenceName = "/coronalObs-sensitivity/ciObserve"
+#sequenceName = "/coronalObs-sensitivity/ciObserve"
 #sequenceName = "/generic/observe"
+
+sequenceName = "/test/test"
 
 # create fixe gain variation
 #varVector = np.random.normal(loc=1.0, scale=0.1, size=2048)
