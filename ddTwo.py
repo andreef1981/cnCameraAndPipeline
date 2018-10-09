@@ -17,49 +17,45 @@ from datetime import datetime
 from astropy.io import fits
 
 def ddTwo(data,
-          linThreshold,
+          modStates,
+          modMode,
+          demodMatrix,
           mode,
-          backgroundDark,
-          gainTable,
           badPixels,
           camera,
           waveCal=None,
-          beamMapping=None,
           debug=False,
           logPath=None):
   
-  #!!!: linThreshold for SLOW, FAST and RSTRDRD mode should live in a property database
+  
   #!!!: bad pixel mask should live in the bulk data base
-  #!!!: background data should be linearity corrected
+  #!!!: demodulation matrix has wavelength dependency
   """
   Unified detailed display plugin to perform linearity, background, gain and
   wavelength correction
   
    Parameters
     ----------
-    data : (#NDRs, 2048, 2048) ndarray, uint16
-        3D data cube that needs to be corrected.
-    linThreshold : float, default=0 for slow mode
-        threshold for the quadratic fit. Everything above will be excluded.
-    mode : string, default="SLOW"
+    data : (#modulationStates, 2048, 2048) ndarray, float32
+        dD data cube that needs to be demodulated. 
+    modStates : (#modulationStates) ndarray, uint8
+        sequence of the modulation states from a given start postition, i.e 
+        [4,5,6,7,0,1,2,3] for a modulation sequence with 8 states
+    modMode : string
+        defining the mode in which the modulator was running,
+        stepped / continous / off / out
+    demodMatrix : (#modulationStates, 4) ndarray, float32
+        demodulation martix for the selected modulation states, camera mode
+        and wavelength
+    mode : string
         defines the readout mode of the camera
-    backgroundDark : (#NDRs, 2048, 2048) ndarray, float32
-        3D data cube that contains the background dark ramp with the exact same
-        camera setup as the data cube. Has to be linearity corrected.
-    gainTable : (2048, 2048) ndarray, float32
-        output from GAIN calibration task
-        normalized gain table to correct gain variation (multiplicative)
+        SLOW / FAST / RSTRDRD
     badPixels : (2048, 2048) ndarray, uint8
         array containing the good and bad pixels
     camera : string
         string describing which instrument is used "SP" or "CI"
-    waveCal : (2048, 2048) ndarray, float32, default None
-        output from WAVECAL calibration task describing what the wavelength
-        at each pixel is
-        Only applicable to SP
-    beamMapping : (2, 2048, 2048) ndarray, float32, default None
-        output from ALIGN3 calibration task
-        information describing how left and right side of beam match.
+    waveCal : (1024) ndarray, float32
+        vector describing what the wavelength at each pixel is
         Only applicable to SP
     debug : boolean, default False
         printing debug messages 
@@ -69,11 +65,10 @@ def ddTwo(data,
         
     Returns
     -------
-    result : (2048, 2048) ndarray, float32
-        Fully corrected image
-    waveVector : (2048,) ndarray, float32
-        vector containing the wavelength at each pixel
-
+    result : (4,1024 , 2048) ndarray, float32
+        4 Stokes images (I,Q,U,V) where the spectral direction is 1024 pixels
+        wide
+    
     Raises
     ------
     AssertationError
@@ -90,10 +85,7 @@ def ddTwo(data,
     These are written in doctest format, and should illustrate how to
     use the function.
 
-    >>> data = np.zeros((5,10,10),dtype='uint16')+6
-    >>> instrumentDark = np.zeros((5,10,10),dtype='float32')+1
-    >>> backgroundDark = np.zeros((5,10,10),dtype='float32')+2
-    >>> darkSubtracted = dark(data,instrumentDark,backgroundDark)
+    >>> 
    """
   
   #TODO: Should we implement a check for exposure time, camera mode or is the
