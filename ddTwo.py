@@ -31,8 +31,9 @@ def ddTwo(data,
   #!!!: bad pixel mask should live in the bulk data base
   #!!!: demodulation matrix has wavelength dependency
   """
-  Unified detailed display plugin to perform linearity, background, gain and
-  wavelength correction
+  Detailed display plugin to perform beam subtraction and demodulation. This 
+  assumes that ddOne has performed all background, linearity and gain correction.
+  The left and right side of the beams have been mapped and can be subtracted.
   
    Parameters
     ----------
@@ -44,9 +45,10 @@ def ddTwo(data,
     modMode : string
         defining the mode in which the modulator was running,
         stepped / continous / off / out
-    demodMatrix : (#modulationStates, 4) ndarray, float32
-        demodulation martix for the selected modulation states, camera mode
-        and wavelength
+    demodMatrix : (2, 4, #modulationStates) ndarray, float32
+        demodulation martices for the selected modulation states, camera mode
+        and wavelength dependent. Sum and difference of beam have different
+        demodulation
     mode : string
         defines the readout mode of the camera
         SLOW / FAST / RSTRDRD
@@ -102,146 +104,84 @@ def ddTwo(data,
 #  assert(data.shape == backgroundDark.shape),\
 #  "background dark array has not the same dimension as the data cube"
   # check data types
-  assert(backgroundDark.dtype == np.float32()),\
-  "background dark data type is not float32"
-  assert(gainTable.dtype == np.float32()),\
-  "gain table data type is not float32"
-  # turn into float for what is to come
-  data = np.float32(data)
   
-  ################# 2. reference pixel correction #############################
-  # needed for slow mode only?
-  if mode is "SLOW":
-    #do something
-    data = data
+  
+  ################# 2. reordering data to match demodulation matrix ###########
+  nrModulationStates = np.size(modStates)
+  back = np.mod(np.arange(nrModulationStates)+np.where(modStates==0)[0],nrModulationStates)
+  sortedData = data[back,:,:]
     
   if debug:
     try:
-      file.write("camera mode is "+mode+"\n")
+      file.write("data has been sorted\n")
     except:
-      print("camera mode is "+mode+"\n")
+      print("data has been sorted\n")
     
   
-  ################# 3. make the linearity correction ##########################  
+  ################# 3. beam subtraction #######################################  
+  left = sortedData[:,:,:1024]
+  right = sortedData[:,:,1024:]
+  summ = (left+right)/2.
+  diff = (left-right)/2.
+  # reshaping so that matrix multiplication can be used
+  summ = np.reshape(summ,(8,2048*1024))
+  diff = np.reshape(diff, (8,2048*1024))
+  ################# 4. demodulation ###########################################  
+  recovI = np.matmul(demodMatrix[0,:,:],summ)
+  recovQUV = np.matmul(demodMatrix[1,:,:],diff)
   
-  # in this case we use the NDR number as our 'time' axis
-  dataTime = np.arange(data.shape[0])
+  recovI = np.reshape(recovI,(4,2048,1024))
+  recovQUV = np.reshape(recovQUV,(4,2048,1024))
+  stokes = np.concatenate((recovI[0,:,:][None,],recovQUV[1:,:,:]))
+  waveVector = waveCal
   
-  if mode is not "SLOW":
-    # fast mode does not use the first frame
-    data = data[1:,:,:]
-    # time vector is shorter but must maintain the values
-    dataTime = dataTime[1:]
-  
-  # Check for order of correction
-  if len(dataTime) == 2:
-    order = 1
-  elif len(dataTime) > 2:
-    order = 2
-  else:
-    raise ValueError("sequence to short to apply polyfit")
-    
-  # Do quadratic fit, use data up to threshold
-  coef = cnPolyfit(data, order, mode, linThreshold)
-  if order == 2:
-    nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-    linearityCorrected = data - nonLinear
-  else:
-    linearityCorrected = data 
-#  linearityCorrectedTwo = coef[1,:,:]*dataTime[-1]
-  
-  #NOTE: linearized last - first frame is not exactly the same as
-  #      linear coefficient * time
-  
-#  print(linearityCorrected[0,0,0]-linearityCorrected[-1,0,0])
-#  print(coef[1,0,0]*dataTime[-1])
-  
-  
-  ################# 4. subtract the background ################################  
-  backgroundSubtracted = linearityCorrected-backgroundDark
-  
-  
-  
-  ################# 5. flat fielding ##########################################
-  gainCorrected = backgroundSubtracted*gainTable
-  
-#  fig, ax=plt.subplots()
-#  plt.imshow(backgroundSubtracted[-1,:,:])
-#  fig, ax=plt.subplots()
-#  plt.imshow(gainTable)
-  
-  # for slow mode signal is inverted
-  if mode is "SLOW":
-    result = gainCorrected[0,:,:] - gainCorrected[-1,:,:]
-  else:
-    result = gainCorrected[-1,:,:] - gainCorrected[0,:,:]
+  return stokes, waveVector
   
 
-  ################# 6. wavecal and beam mapping ###############################
-  if camera is "SP":
-    # for now just use the center row
-    waveVector = waveCal[1024,:]
-  else:
-    waveVector = 0
-    
-  if debug:
-    try:
-      file.write("result maximum is "+str(np.max(result))+"\n")
-      file.write("result minimum is "+str(np.min(result))+"\n")
-      file.write("result median "+str(np.median(result))+"\n")
-    except:
-      print("result maximum is "+str(np.max(result)))
-      print("result minimum is "+str(np.min(result)))
-      print("result median "+str(np.median(result)))
-  
-  return result, waveVector
-  
-
-#######run this first with second part commented because spSpectrum sequence
-# is too long for a single call to ddOne
-
-## reading the data
-# cssStyle needs ramps and ndr information
-#a=cnH2rgRamps("data/coronalObs-sensitivity/ciObserve",
-#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=72, ndr=4)
-#data = np.squeeze(a.read("fits",dtype=np.uint16))
-## reading the background data
-#b=cnH2rgRamps("data/coronalObs-sensitivity/ciMasterBackgroundDark",
-#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=1, ndr=4)
-#backgroundDark = np.squeeze(b.read("fits",dtype=np.float32))
 #
-#gainTable = in_im = fits.open("data/coronalObs-sensitivity/ciMasterGain1.000.fits")[0].data.astype(np.float32)
+### reading the data
+## cssStyle needs ramps and ndr information
+#a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve-ddOne",
+#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#              ramps=1, ndr=8)
+#data = np.squeeze(a.read("fits",dtype=np.float32))
 #
 #waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
 #
 #badPixels = fits.open("data/coronalObs-sensitivity/ciBadPixels.000.fits")[0].data.astype(np.uint8)
 #
-#c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
-#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=1, ndr=2)
-#beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
-#data = np.squeeze(data[0,:,:,:])
-
-
-######### run this after first part with first part commented
-linThreshold = 0
-mode = "SLOW"
-camera = "CI"
-result,wavevector = ddOne(data,
-                          linThreshold,
-                          mode,
-                          backgroundDark,
-                          gainTable,
-                          badPixels,
-                          camera,
-                          waveCal,
-                          beamMapping,
-                          debug=True,
-                          logPath=None)
-
-#fig, ax=plt.subplots()
-#plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
-fig, ax=plt.subplots()
-plt.imshow(result, vmin=0.,vmax=7000.)
+#
+########## run this after first part with first part commented
+#modMode = "stepped"
+##modStates = np.arange(8)
+#
+#modStates = np.array([3,4,5,6,7,0,1,2])
+#
+#data = data[modStates,:,:]
+#
+#mode = "SLOW"
+#camera = "SP"
+##demodSum = np.load("data/spectra/demod-sum-8-SiIX.npy")
+##demodDiff = np.load("data/spectra/demod-diff-8-SiIX.npy")
+##demodMatrix = np.concatenate((demodSum[None,:,:],demodDiff[None,:,:]))
+##np.save("data/spectra/demod-8-SiIX.npy",demodMatrix)
+#demodMatrix = np.load("data/spectra/demod-8-SiIX.npy")
+#
+#result, waveVector = ddTwo(data,
+#                           modStates,
+#                           modMode,
+#                           demodMatrix,
+#                           mode,
+#                           badPixels,
+#                           camera,
+#                           waveCal=None,
+#                           debug=False,
+#                           logPath=None)
+#
+##fig, ax=plt.subplots()
+##plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
+#fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+#ax1.imshow(result[0,:,:], vmin=0.,vmax=3000.)
+#ax2.imshow(result[1,:,:], vmin=0.,vmax=200.)
+#ax3.imshow(result[2,:,:], vmin=0.,vmax=200.)
+#ax4.imshow(result[3,:,:], vmin=0.,vmax=20.)

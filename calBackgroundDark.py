@@ -175,9 +175,9 @@ def calBackgroundDark(data,
 
 
 
-b=cnH2rgRamps("data/coronalObs-sensitivity/ciBackgroundDark",
+b=cnH2rgRamps("data/coronalObs-sensitivity/spBackgroundDark",
               "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-              ramps=3, ndr=4)
+              ramps=3, ndr=2)
 data=b.read("fits",dtype=np.uint16)
 linThreshold = 0
 mode = "SLOW"
@@ -188,5 +188,5 @@ c= calBackgroundDark(data,
                      logPath=None,
                      writeToFile=True,
                      filePath='data/coronalObs-sensitivity/',
-                     sequenceName='ciMasterBackgroundDark',
+                     sequenceName='spMasterBackgroundDark',
                      fileFormat="both")

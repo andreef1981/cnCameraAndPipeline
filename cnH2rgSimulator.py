@@ -42,7 +42,7 @@ class cnH2rgRamp():
                addInstrumentDarkNoise=False,addThermalDark=False, addThermalDarkNoise=False,
                addFlatQuadraticSignal=False,quadraticCoeff=[2.,1.,0], addFlatQuadraticNoise=False,
                gainVariation=None, 
-               spectrum=None, fileFormat=None):
+               spectrum=None, spectrumType=None, fileFormat=None):
 #  def __init__(self, mode, frameRate, integrationTime, biasChannelDifference,
 #               biasChannelVariations, channelReadNoise, channelReadNoiseVariation,
 #               gainVariation, deadPixels, negPixels, darkCurrent, ):
@@ -61,7 +61,7 @@ class cnH2rgRamp():
       self.addingSign = -1.
     else:
       self.addingSign = 1.
-      
+    self.spectrum = spectrum  
     # Bias level
     # scale the random channel bias offest [-0.5,0.5] with bias level offset scaling
     # to a percentage of bias level
@@ -76,6 +76,10 @@ class cnH2rgRamp():
     readNoiseFrame = np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))*self.readNoise
     
     for j in range(self.nrSequences):
+      if spectrumType is "modulated":
+        spectrum = np.tile(self.spectrum[j,:],(2048,1))
+      else:
+        spectrum = np.tile(np.concatenate((self.spectrum,self.spectrum)),(2048,1))
       for i in range(self.ndr):
         print(i)
         if addReadnoise:
@@ -138,14 +142,14 @@ class cnH2rgRamp():
                           (i*self.frameTime)**2.*quadraticCoeff[0])
          
           if spectrum is not None:
-            if len(spectrum.shape) > 2:
-              flatSignal.frame = flatSignal.frame * spectrum[j,:,:]
-            else:
-              flatSignal.frame = flatSignal.frame * spectrum
+#            if len(spectrum.shape) > 2:
+#              flatSignal.frame = flatSignal.frame * spectrum[j,:,:]
+#            else:
+            flatSignal.frame = flatSignal.frame * spectrum
           # TODO: Add slit rotation
           # TODO: Add slit curvature
           # TODO: Add pinhole spectra
-          
+            
           
           if addFlatQuadraticNoise:
             # use normal distribution to simulate dark noise
@@ -191,8 +195,8 @@ class cnH2rgRamp():
 
 
 mode = "slow"
-ndr = 4
-nrSequences = 1
+ndr = 2
+nrSequences = 3
 arrayTemperature = 130. 
 biasLevelOffsetScaling =  0. # realistic value is 0.001
 # bias, readnoise values given in ADU
@@ -217,9 +221,10 @@ frameDelay = 0.
 #sequenceName = "/coronalObs-sensitivity/ciGain1"
 #sequenceName = "/coronalObs-sensitivity/spObserve"
 #sequenceName = "/coronalObs-sensitivity/ciObserve"
+sequenceName = "/coronalObs-sensitivity/spWavecal"
 #sequenceName = "/generic/observe"
 
-sequenceName = "/test/test"
+#sequenceName = "/test/test"
 
 # create fixe gain variation
 #varVector = np.random.normal(loc=1.0, scale=0.1, size=2048)
@@ -230,16 +235,16 @@ sequenceName = "/test/test"
 heSpectrum = fits.open("data/spectra/he_spectrum_combined-32bitfloat.fits")[0].data.astype(np.float32)
 gainVariation = fits.open("data/gain/2048row_gainVariation.fits")[0].data.astype(np.float32)
 siSpectrum = np.load("data/spectra/modulated-8-SiIX.npy")
-siSpectrum = np.tile(siSpectrum[0,:],(2048,1))
+tharSpectrum = np.load("data/spectra/SiIX-ThAr-spectrum.npy")
 #plt.imshow(siSpectrum)
 #TODO: instrument dark noise has issue with non matching array sizes
-a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
+a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
              arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
              addInstrumentDark=True,addInstrumentDarkNoise=False,
              addThermalDark=True, addThermalDarkNoise=False,
              addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
              gainVariation=gainVariation,
-             spectrum=siSpectrum, fileFormat='both')    
+             spectrum=tharSpectrum, spectrumType=None,fileFormat='both')    
 
 # Generic data set
 #a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,

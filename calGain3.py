@@ -16,9 +16,9 @@ Revision history
     
 """
 import numpy as np
-#from astropy.io import fits
-#import matplotlib.pyplot as plt
-#from cnPipeline import *
+from astropy.io import fits
+import matplotlib.pyplot as plt
+from cnPipeline import *
 from helperFunctions import *
 
 def calGain3(data,
@@ -206,40 +206,40 @@ def calGain3(data,
 
 ### reading the data
 ## cssStyle needs ramps and ndr information
-#a=cnH2rgRamps("data/coronalObs-sensitivity/spMasterBackgroundDark",
-#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=1, ndr=2)
-#dark = np.squeeze(a.read("fits",dtype=np.uint16))
-#
-#b=cnH2rgRamps("data/coronalObs-sensitivity/spGain3",
-#              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-#              ramps=3, ndr=2)
-#data=b.read("fits",dtype=np.uint16)
-#
-#
-#
-#linThreshold = 0
-#mode = "SLOW"
-#stagePosition = np.arange(3)
-#badPixels = np.zeros((2048,2048),dtype="uint8")
-#oldGain = np.ones((2048,2048),dtype="float32")
+a=cnH2rgRamps("data/coronalObs-sensitivity/spMasterBackgroundDark",
+              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+              ramps=1, ndr=2)
+dark = np.squeeze(a.read("fits",dtype=np.uint16))
 
-#c= calGain3(data,
-#            stagePosition,
-#            dark,
-#            badPixels,
-#            oldGain,
-#            linThreshold,
-#            mode,
-#            changeThreshold=None,
-#            simulateChange=False,
-#            debug=True,
-#            logPath=None,
-#            writeToFile=True,
-#            filePath="data/coronalObs-sensitivity/",
-#            sequenceName="spMasterGain3",
-#            fileFormat="both")
-#  
-#fig, ax=plt.subplots()
-#plt.imshow(c[0],vmin=0.9, vmax=1.1)
-#plt.show()
+b=cnH2rgRamps("data/coronalObs-sensitivity/spGain3",
+              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
+              ramps=3, ndr=2)
+data=b.read("fits",dtype=np.uint16)
+
+
+
+linThreshold = 0
+mode = "SLOW"
+stagePosition = np.arange(3)
+badPixels = np.zeros((2048,2048),dtype="uint8")
+oldGain = np.ones((2048,2048),dtype="float32")
+
+c= calGain3(data,
+            stagePosition,
+            dark,
+            badPixels,
+            oldGain,
+            linThreshold,
+            mode,
+            changeThreshold=None,
+            simulateChange=False,
+            debug=True,
+            logPath=None,
+            writeToFile=True,
+            filePath="data/coronalObs-sensitivity/",
+            sequenceName="spMasterGain3",
+            fileFormat="both")
+  
+fig, ax=plt.subplots()
+plt.imshow(c[0],vmin=0.9, vmax=1.1)
+plt.show()
