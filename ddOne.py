@@ -208,63 +208,63 @@ def ddOne(data,
 
 #######run this first with second part commented because spSpectrum sequence
 # is too long for a single call to ddOne
-
-# reading the data
-# cssStyle needs ramps and ndr information
-a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve.",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=8, ndr=2)
-data = np.squeeze(a.read("fits",dtype=np.uint16))
-# reading the background data
-b=cnH2rgRamps("data/coronalObs-sensitivity/spMasterBackgroundDark",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=1, ndr=2)
-backgroundDark = np.squeeze(b.read("fits",dtype=np.float32))
-
-gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
-
-waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
-
-badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
-
-c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=1, ndr=2)
-beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
-#data = np.squeeze(data[0,:,:,:])
-
-
-######### run this after first part with first part commented
-linThreshold = 0
-mode = "SLOW"
-camera = "SP"
-fileFormat = "both"
-filePath = "data/coronalObs-sensitivity/"
-sequenceName = "spObserve-ddOneProcessed"
-
-for ii in range(8):
-  result,wavevector = ddOne(data[ii,:,:,:],
-                            linThreshold,
-                            mode,
-                            backgroundDark,
-                            gainTable,
-                            badPixels,
-                            camera,
-                            waveCal,
-                            beamMapping,
-                            debug=True,
-                            logPath=None)
-  if fileFormat == "fits":
-    hdu = fits.PrimaryHDU(result)
-    hdu.writeto(filePath+sequenceName+'.{0:03d}'.format(ii)+'.fits',overwrite=True)
-  elif fileFormat == "raw":
-    result.tofile(filePath+sequenceName+'{0:03d}'.format(ii)+'.raw',sep="")
-  elif fileFormat == "both":
-    hdu = fits.PrimaryHDU(result)
-    hdu.writeto(filePath+sequenceName+'.{0:03d}'.format(ii)+'.fits',overwrite=True)
-    result.tofile(filePath+sequenceName+'.{0:03d}'.format(ii)+'.raw',sep="")
-  else:
-    raise ValueError("Specify valid file type.")
+#
+## reading the data
+## cssStyle needs ramps and ndr information
+#a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve.",
+#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#              ramps=8, ndr=2)
+#data = np.squeeze(a.read("fits",dtype=np.uint16))
+## reading the background data
+#b=cnH2rgRamps("data/coronalObs-sensitivity/spMasterBackgroundDark",
+#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#              ramps=1, ndr=2)
+#backgroundDark = np.squeeze(b.read("fits",dtype=np.float32))
+#
+#gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+#
+#waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
+#
+#badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
+#
+#c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
+#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#              ramps=1, ndr=2)
+#beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
+##data = np.squeeze(data[0,:,:,:])
+#
+#
+########## run this after first part with first part commented
+#linThreshold = 0
+#mode = "SLOW"
+#camera = "SP"
+#fileFormat = "both"
+#filePath = "data/coronalObs-sensitivity/"
+#sequenceName = "spObserve-ddOneProcessed"
+#
+#for ii in range(8):
+#  result,wavevector = ddOne(data[ii,:,:,:],
+#                            linThreshold,
+#                            mode,
+#                            backgroundDark,
+#                            gainTable,
+#                            badPixels,
+#                            camera,
+#                            waveCal,
+#                            beamMapping,
+#                            debug=True,
+#                            logPath=None)
+#  if fileFormat == "fits":
+#    hdu = fits.PrimaryHDU(result)
+#    hdu.writeto(filePath+sequenceName+'.{0:03d}'.format(ii)+'.fits',overwrite=True)
+#  elif fileFormat == "raw":
+#    result.tofile(filePath+sequenceName+'{0:03d}'.format(ii)+'.raw',sep="")
+#  elif fileFormat == "both":
+#    hdu = fits.PrimaryHDU(result)
+#    hdu.writeto(filePath+sequenceName+'.{0:03d}'.format(ii)+'.fits',overwrite=True)
+#    result.tofile(filePath+sequenceName+'.{0:03d}'.format(ii)+'.raw',sep="")
+#  else:
+#    raise ValueError("Specify valid file type.")
 
 #fig, ax=plt.subplots()
 #plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)

@@ -135,10 +135,10 @@ def ddTwo(data,
   stokes = np.concatenate((recovI[0,:,:][None,],recovQUV[1:,:,:]))
   waveVector = waveCal
   
-  return stokes, waveVector
+  return np.float32(stokes), waveVector
   
 
-#
+##
 ### reading the data
 ## cssStyle needs ramps and ndr information
 #a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve-ddOne",
