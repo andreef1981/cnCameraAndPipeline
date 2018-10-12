@@ -9,7 +9,7 @@ import numpy as np
 import os
 from astropy.io import fits
 import matplotlib.pyplot as plt
-
+from helperFunctions import *
 
 class cnH2rgFrame():
   def __init__(self):
@@ -42,7 +42,7 @@ class cnH2rgRamp():
                addInstrumentDarkNoise=False,addThermalDark=False, addThermalDarkNoise=False,
                addFlatQuadraticSignal=False,quadraticCoeff=[2.,1.,0], addFlatQuadraticNoise=False,
                gainVariation=None, 
-               spectrum=None, spectrumType=None, fileFormat=None):
+               spectrum=None, spectrumType=None, spatialProfile=None,fileFormat=None):
 #  def __init__(self, mode, frameRate, integrationTime, biasChannelDifference,
 #               biasChannelVariations, channelReadNoise, channelReadNoiseVariation,
 #               gainVariation, deadPixels, negPixels, darkCurrent, ):
@@ -149,7 +149,9 @@ class cnH2rgRamp():
           # TODO: Add slit rotation
           # TODO: Add slit curvature
           # TODO: Add pinhole spectra
-            
+          
+          if spatialProfile is not None:
+            flatSignal.frame = flatSignal.frame * spatialProfile
           
           if addFlatQuadraticNoise:
             # use normal distribution to simulate dark noise
@@ -192,7 +194,29 @@ class cnH2rgRamp():
     #hdul = fits.HDUList([hdu])
     hdu.writeto(filepath+filename,overwrite=overwrite)
 
+# create spatial profiles
+# total of 42 groups with an extra center pinhole
+spacing = 14
+center = np.arange(36,2048,47)
+left = np.concatenate((center[0:21],center[22:]))+ spacing
+right = np.concatenate((center[0:21],center[22:]))- spacing
+y = np.arange(2048)
 
+allY = np.concatenate((left,center,right))
+profilePinhole = np.zeros(2048)
+profileDiskSlit = np.zeros(2048)
+profileDiskSlit[512:1536] = profileDiskSlit[512:1536]+1
+profileCoronaSlit = np.zeros(2048)
+profileCoronaSlit[5:2042] = profileCoronaSlit[5:2042]+1
+kernel = cnGauss(np.arange(100)-50,1,0,20,0)
+spatialDisk = np.convolve(profileDiskSlit,kernel,mode="same")/sum(kernel)
+spatialCorona = np.convolve(profileCoronaSlit,kernel,mode="same")/sum(kernel)
+spatialFwhmPinhole = 3 # pixels
+imDisk = np.tile(spatialDisk, (2048,1)).T
+imCorona = np.tile(spatialCorona, (2048,1)).T
+for ii in range(len(allY)):
+  profilePinhole = profilePinhole + gauss(y,0.1,allY[ii],spatialFwhmPinhole/2.35,0)
+imPinhole = np.tile(profilePinhole, (2048,1)).T  
 
 mode = "slow"
 ndr = 2
@@ -206,6 +230,7 @@ if mode is "slow":
 elif mode is "fast":
   biasLevel = 25000.
   readNoise = 20. # 80e-
+
 
 
 frameTime = np.load("frameTime.npy")
@@ -244,7 +269,8 @@ a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling
              addThermalDark=True, addThermalDarkNoise=False,
              addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
              gainVariation=gainVariation,
-             spectrum=tharSpectrum, spectrumType=None,fileFormat='both')    
+             spectrum=tharSpectrum, spectrumType=None,
+             spatialProfile=imCorona,fileFormat='both')    
 
 # Generic data set
 #a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,

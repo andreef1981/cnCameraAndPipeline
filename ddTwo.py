@@ -12,7 +12,7 @@ Revision history
 import numpy as np
 import matplotlib.pyplot as plt
 from cnPipeline import *
-from helperFunctions import *
+# from helperFunctions import *
 from datetime import datetime
 from astropy.io import fits
 
@@ -30,6 +30,7 @@ def ddTwo(data,
   
   #!!!: bad pixel mask should live in the bulk data base
   #!!!: demodulation matrix has wavelength dependency
+  #!!!: Group model matrix is also needed
   """
   Detailed display plugin to perform beam subtraction and demodulation. This 
   assumes that ddOne has performed all background, linearity and gain correction.
@@ -138,50 +139,50 @@ def ddTwo(data,
   return np.float32(stokes), waveVector
   
 
-##
-### reading the data
-## cssStyle needs ramps and ndr information
-#a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve-ddOne",
-#              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#              ramps=1, ndr=8)
-#data = np.squeeze(a.read("fits",dtype=np.float32))
 #
-#waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
-#
-#badPixels = fits.open("data/coronalObs-sensitivity/ciBadPixels.000.fits")[0].data.astype(np.uint8)
-#
-#
-########## run this after first part with first part commented
-#modMode = "stepped"
-##modStates = np.arange(8)
-#
-#modStates = np.array([3,4,5,6,7,0,1,2])
-#
-#data = data[modStates,:,:]
-#
-#mode = "SLOW"
-#camera = "SP"
-##demodSum = np.load("data/spectra/demod-sum-8-SiIX.npy")
-##demodDiff = np.load("data/spectra/demod-diff-8-SiIX.npy")
-##demodMatrix = np.concatenate((demodSum[None,:,:],demodDiff[None,:,:]))
-##np.save("data/spectra/demod-8-SiIX.npy",demodMatrix)
-#demodMatrix = np.load("data/spectra/demod-8-SiIX.npy")
-#
-#result, waveVector = ddTwo(data,
-#                           modStates,
-#                           modMode,
-#                           demodMatrix,
-#                           mode,
-#                           badPixels,
-#                           camera,
-#                           waveCal=None,
-#                           debug=False,
-#                           logPath=None)
-#
-##fig, ax=plt.subplots()
-##plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
-#fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
-#ax1.imshow(result[0,:,:], vmin=0.,vmax=3000.)
-#ax2.imshow(result[1,:,:], vmin=0.,vmax=200.)
-#ax3.imshow(result[2,:,:], vmin=0.,vmax=200.)
-#ax4.imshow(result[3,:,:], vmin=0.,vmax=20.)
+## reading the data
+# cssStyle needs ramps and ndr information
+a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve-ddOne",
+              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+              ramps=1, ndr=8)
+data = np.squeeze(a.read("fits",dtype=np.float32))
+
+waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
+
+badPixels = fits.open("data/coronalObs-sensitivity/ciBadPixels.000.fits")[0].data.astype(np.uint8)
+
+
+######### run this after first part with first part commented
+modMode = "stepped"
+#modStates = np.arange(8)
+
+modStates = np.array([3,4,5,6,7,0,1,2])
+
+data = data[modStates,:,:]
+
+mode = "SLOW"
+camera = "SP"
+#demodSum = np.load("data/spectra/demod-sum-8-SiIX.npy")
+#demodDiff = np.load("data/spectra/demod-diff-8-SiIX.npy")
+#demodMatrix = np.concatenate((demodSum[None,:,:],demodDiff[None,:,:]))
+#np.save("data/spectra/demod-8-SiIX.npy",demodMatrix)
+demodMatrix = np.load("data/spectra/demod-8-SiIX.npy")
+
+result, waveVector = ddTwo(data,
+                           modStates,
+                           modMode,
+                           demodMatrix,
+                           mode,
+                           badPixels,
+                           camera,
+                           waveCal=None,
+                           debug=False,
+                           logPath=None)
+
+#fig, ax=plt.subplots()
+#plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
+fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+ax1.imshow(result[0,:,:], vmin=0.,vmax=3000.)
+ax2.imshow(result[1,:,:], vmin=0.,vmax=200.)
+ax3.imshow(result[2,:,:], vmin=0.,vmax=200.)
+ax4.imshow(result[3,:,:], vmin=0.,vmax=20.)

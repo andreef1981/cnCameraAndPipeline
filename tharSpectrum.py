@@ -128,6 +128,9 @@ bandpass = 20
 wavelength, spec,conv, newx,final,allx,allfinal = tharSpectrum(cw,wavelengthOnArray,bandpass)
 #np.save("data/spectra/SiIX-ThAr-wavelength.npy", newx)
 #np.save("data/spectra/SiIX-ThAr-spectrum.npy", final)
+
+refSpectrum = np.concatenate((allx[None,],allfinal[None,]),axis=0)
+# np.save("data/spectra/SiIX-ThAr-reference-spectrum-175um.npy", refSpectrum)
 fig, ax=plt.subplots()
 ax.plot(wavelength,spec,wavelength,conv,'r', newx,final,'g')
 

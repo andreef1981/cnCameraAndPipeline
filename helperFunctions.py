@@ -8,6 +8,8 @@ helper library
 """
 
 import numpy as np  # Fast numeric arrays/matrices (FITS files imported as numpy matrices)
+from scipy.signal import find_peaks
+from scipy import exp
 
 def inversematrices(data):
     # From Kathleen Tatem
@@ -119,26 +121,167 @@ def matrixQuadfit(data,threshold=66000, mode="SLOW",ignoreRef=False):
     coefs[2] = (invCijperpix[4]*aij) + (invCijperpix[5]*bij) + (invCijperpix[2]*cij)
         
     return coefs[0], coefs[1], coefs[2]
-"""
-Notes 
------
-  timing for a 10 NDR ramp of 2048x2048 the timing is as follows
-    -up to where fit is done 0.69 seconds (mostly due to reshaping)
-    -up to where fited data points ar calculated 2.5 seconds
-    -end 2.5 seconds
-  NDR = 4 total time is 1.1 sec
-    -if fitted data points are done/reshaping adds 0.6 seconds
-  in comparison Quadfit function (no fitted points calculated) takes 2.14 sec
-  but does not check for how many points are in series
-"""
+
 
 #import matplotlib.pyplot as plt
 #import time
+
+
+def cnFindSpatialPeaks(im,
+                       peakWidth,
+                       xLoc,
+                       averageFwhm,
+                       prominenceLimits,
+                       heightLimits,
+                       invert=False):
+  
+  # try to estimate a maximum height from the data
+  #TODO: use bad pixel mask to refine this
+  if invert:
+    im = -1*im
+  # profile is calculated from certain x location
+  if isinstance(xLoc,int):
+    # averaging over several columns
+    if averageFwhm>0:
+      profile=np.median(im[:,xLoc-averageFwhm:xLoc+averageFwhm-1], axis=1)
+    # only use a single column (could be affected by bad pixels)
+    else:
+      profile=im[:,xLoc]
+  # use given xLoc interval for median profile
+  else:
+    profile=np.median(im[:,xLoc[0]:xLoc[1]], axis=1)
+  peaks = find_peaks(profile,width=peakWidth,prominence=prominenceLimits,
+                     height=heightLimits)
+  ind = peaks[0] 
+  widths = peaks[1]['widths']
+  prominences = peaks[1]['prominences']
+  heights = peaks[1]['peak_heights']
+  
+  return ind, widths, prominences, heights, profile
+
+def cnFindSpectralPeaks(im,
+                        peakWidth,
+                        spatialPeaks,
+                        spatialWidths,
+                        xLoc,
+                        prominenceLimits,
+                        heightLimits,
+                        invert=False):
+  #TODO: implement subpixel width support
+  # assert(spatialWidths.dtype == np.int16()),\
+  # "Spatial widths need to be integers for indexing"
+  
+  if invert:
+    im = -1*im
+    
+  nrSpectra = len(spatialPeaks)
+  profile = np.zeros((nrSpectra,xLoc[1]-xLoc[0]))
+  result = []
+  
+  for ii in range(nrSpectra):
+    profile[ii,:] = np.median(im[spatialPeaks[ii]-spatialWidths[ii]:
+      spatialPeaks[ii]+spatialWidths[ii]-1,xLoc[0]:xLoc[1]],axis=0)
+    peaks = find_peaks(profile[ii,:],width=peakWidth,
+                       prominence=prominenceLimits,
+                       height=heightLimits)
+    ind = peaks[0] 
+    widths = peaks[1]['widths']
+    prominences = peaks[1]['prominences']
+    heights = peaks[1]['peak_heights']
+    result.append((ind,widths,prominences,heights))
+  
+  return result, profile
+
+
+def cnGauss(x,
+            a,
+            x0,
+            sigma,
+            c):
+  """
+  Simple Gauss function.
+  """
+  return c+a*exp(-(x-x0)**2/(2*sigma**2))
+  
+
+def cnNonLinearityCorrection(data,
+                             mode,
+                             linThreshold,
+                             multiRamp=False):  
+  if multiRamp:
+    # in this case we use the NDR number as our 'time' axis
+    dataTime = np.arange(data.shape[1])
+    
+    if mode is not "SLOW":
+      # fast mode does not use the first frame
+      data = data[:,1:,:,:]
+      # time vector is shorter but must maintain the values
+      dataTime = dataTime[1:]
+    
+    linearityCorrected = np.zeros(data.shape,dtype=np.float32)
+    # need to loop to use cnPolyfit
+    
+    # Check for order of correction
+    if len(dataTime) == 2:
+      order = 1
+    elif len(dataTime) > 2:
+      order = 2
+    else:
+      raise ValueError("sequence to short to apply polyfit")
+      
+    for i in np.arange(data.shape[0]):
+      # Do quadratic fit, use data up to threshold
+      coef = cnPolyfit(np.squeeze(data[i,:,:,:]), order, mode, linThreshold)
+      if order == 2:
+        nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
+        linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
+      else:
+        linearityCorrected[i,:,:,:] = data[i,:,:,:]
+  else:
+    # in this case we use the NDR number as our 'time' axis
+    dataTime = np.arange(data.shape[0])
+    
+    if mode is not "SLOW":
+      # fast mode does not use the first frame
+      data = data[1:,:,:]
+      # time vector is shorter but must maintain the values
+      dataTime = dataTime[1:]
+    
+    # Check for order of correction
+    if len(dataTime) == 2:
+      order = 1
+    elif len(dataTime) > 2:
+      order = 2
+    else:
+      raise ValueError("sequence to short to apply polyfit")
+      
+    # Do quadratic fit, use data up to threshold
+    coef = cnPolyfit(data, order, mode, linThreshold)
+    if order == 2:
+      nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
+      linearityCorrected = data - nonLinear
+    else:
+      linearityCorrected = data 
+      
+  return linearityCorrected
+  
 
 def cnPolyfit(ramp, order, mode, threshold):
   """
   returns coefficient for quadratic fit [3,2048,2048], where dim 0 is quadratic
   term
+  
+
+  Notes 
+  -----
+    timing for a 10 NDR ramp of 2048x2048 the timing is as follows
+      -up to where fit is done 0.69 seconds (mostly due to reshaping)
+      -up to where fited data points ar calculated 2.5 seconds
+      -end 2.5 seconds
+    NDR = 4 total time is 1.1 sec
+      -if fitted data points are done/reshaping adds 0.6 seconds
+    in comparison Quadfit function (no fitted points calculated) takes 2.14 sec
+    but does not check for how many points are in series
   """
   # currently only works for up to quadratic
 #  start = time.time()
@@ -217,7 +360,15 @@ def cnPolyfit(ramp, order, mode, threshold):
 #  end = time.time()
 #  print(end - start)
   return coef
+  
 
+
+
+
+def test():
+  return 1
+
+#test= cnGauss(np.arange(100),1,50,10,0)
 #test = np.float32(np.arange(2048*2048*10).reshape((10,2048,2048)))
 #ndrs = 4
 #test = np.ones((ndrs,2048,2048))
