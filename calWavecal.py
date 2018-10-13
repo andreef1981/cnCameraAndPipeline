@@ -164,13 +164,13 @@ def calWavecal(data,
                                                     [30,2000],
                                                     invert=False)
     
-    !!! problem, why are there NaNs in the result (image?)
+    #!!! problem, why are there NaNs in the result (image?)
     
     # cross correlate to reference spectrum
     a = np.squeeze(refSpectrum[1,:])
     b = np.squeeze(leftProfile)
     cross=np.correlate(a,b,mode="same")
-    myInd = np.where(test==np.max(test))[0][0]
+    myInd = np.where(cross==np.max(cross))[0][0]
     print("this",myInd)
   newWavecal = result
   # Fifth loop through sequences to find lines from ThAr spectrum

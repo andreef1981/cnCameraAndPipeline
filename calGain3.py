@@ -171,7 +171,9 @@ def calGain3(data,
   
   ################# 5. make the gain table ####################################
   temp = np.mean(backgroundSubtracted,axis=0)
-  gainTable = np.mean(temp[-1,:,:])/temp[-1,:,:]
+  gainTable = 1/(temp[-1,:,:]/np.mean(temp[-1,:,:]))
+  #TODO: fix for some very large gains... should be taken care by bad pixels?
+  gainTable = np.where(np.abs(gainTable) > 50, 0, gainTable)
   
   if debug:
     try:
@@ -224,7 +226,7 @@ stagePosition = np.arange(3)
 badPixels = np.zeros((2048,2048),dtype="uint8")
 oldGain = np.ones((2048,2048),dtype="float32")
 
-c= calGain3(data,
+c,flag= calGain3(data,
             stagePosition,
             dark,
             badPixels,
@@ -241,5 +243,5 @@ c= calGain3(data,
             fileFormat="both")
   
 fig, ax=plt.subplots()
-plt.imshow(c[0],vmin=0.9, vmax=1.1)
+plt.imshow(c,vmin=0.9, vmax=1.1)
 plt.show()
