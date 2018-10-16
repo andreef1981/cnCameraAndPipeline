@@ -137,24 +137,25 @@ def calBackgroundDark(data,
   for i in np.arange(data.shape[0]):
     # Do quadratic fit, use data up to threshold
     coef = cnPolyfit(np.squeeze(data[i,:,:,:]), order, mode, linThreshold)
-    if order == 2:
-      nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-      linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
-    else:
-      linearityCorrected[i,:,:,:] = data[i,:,:,:]
+    
+    # nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
+    # linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
+    # this returns the total linearize flux
+    linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],dataTime[:,None,None]**2.)
+    
       
       
   ################# 4. make the linearity correction ##########################
-  averagedDark = np.average(linearityCorrected, axis=0)
+  averagedDark = np.mean(linearityCorrected, axis=0)
     
     
   if debug:
     try:
-      file.write("mean variance is "+str(np.mean(np.var(linearityCorrected,axis=0)))+"\n")
-      file.write("std of variance is "+str(np.std(np.var(linearityCorrected,axis=0)))+"\n")
+      file.write("mean variance is "+str(np.nanmean(np.var(linearityCorrected,axis=0)))+"\n")
+      file.write("std of variance is "+str(np.nanstd(np.var(linearityCorrected,axis=0)))+"\n")
     except:
-      print("mean variance is "+str(np.mean(np.var(linearityCorrected,axis=0))))
-      print("std of variance is "+str(np.std(np.var(linearityCorrected,axis=0))))
+      print("mean variance is "+str(np.nanmean(np.var(linearityCorrected,axis=0))))
+      print("std of variance is "+str(np.nanstd(np.var(linearityCorrected,axis=0))))
       
   # for test purposes lets write the files to fits
   if writeToFile:
@@ -175,18 +176,18 @@ def calBackgroundDark(data,
 
 
 
-b=cnH2rgRamps("data/coronalObs-sensitivity/spBackgroundDark",
-              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-              ramps=3, ndr=2)
-data=b.read("fits",dtype=np.uint16)
-linThreshold = 0
-mode = "SLOW"
-c= calBackgroundDark(data,
-                     linThreshold,
-                     mode,
-                     debug=True,
-                     logPath=None,
-                     writeToFile=True,
-                     filePath='data/coronalObs-sensitivity/',
-                     sequenceName='spMasterBackgroundDark',
-                     fileFormat="both")
+# b=cnH2rgRamps("data/coronalObs-sensitivity/spBackgroundDark",
+#               "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=2)
+# data=b.read("fits",dtype=np.uint16)
+# linThreshold = 0
+# mode = "SLOW"
+# c= calBackgroundDark(data,
+#                      linThreshold,
+#                      mode,
+#                      debug=True,
+#                      logPath=None,
+#                      writeToFile=True,
+#                      filePath='data/coronalObs-sensitivity/',
+#                      sequenceName='spMasterBackgroundDark',
+#                      fileFormat="both")

@@ -302,7 +302,20 @@ def cnPolyfit(ramp, order, mode, threshold):
   #BUG: This only works if there actually is a nan otherwise the first entry
   # might be the biggest entry <AFE 2018-09-21 a:AFE>
   #firstNan = nanY.argmax(axis=0)
-  firstNan = np.sum(np.isfinite(nanY),axis=0)
+  
+  #BUG: This does not consider cases where NaNs and values are alternating
+  # <AFE 2018-10-15 a:AFE>
+  #firstNan = np.sum(np.isfinite(nanY),axis=0)
+  firstNan = nanY.argmax(axis=0)
+  # but if there is no Nan
+  tester = np.max(nanY, axis=0)
+  length = y.shape[0]
+  firstNan = np.where(np.isfinite(tester),length,firstNan)
+  
+  # set everything after first NaN to NaN
+  nanY = np.where(np.repeat(np.arange(x.shape[0])[:,None],y.shape[1],axis=1)-
+                  firstNan<=0, nanY, np.nan)
+  
   
   # are there any series where number of data points is not sufficient for 
   # order of polynom?
@@ -314,10 +327,6 @@ def cnPolyfit(ramp, order, mode, threshold):
     quadratic = np.array([])
     linear = np.where(firstNan>order)[0]
     justOne = np.where(firstNan<=order)[0]
-  
-  # set everything after first NaN to NaN
-  nanY = np.where(np.repeat(np.arange(x.shape[0])[:,None],y.shape[1],axis=1)-
-                  firstNan<=0, nanY, np.nan)
   
   # for only one data point set whole series to 0
   nanY[:,justOne] = 0 

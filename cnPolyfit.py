@@ -101,18 +101,18 @@ def cnPolyfit(ramp, order, mode, threshold):
   return coef
 
 #test = np.float32(np.arange(2048*2048*10).reshape((10,2048,2048)))
-ndrs = 4
-test = np.ones((ndrs,2048,2048))
-test = test + test*np.arange(ndrs)[:,None,None]+ test*(0.5*np.arange(ndrs)[:,None,None]**2)
-#test[5,0,0]=400
-test[2,0,0]=300
-test[3,0,0]=90
-#test[4,0,0]=20
-test[1,2,0]=300
-#y = test.reshape(test.shape[0],test.shape[1]*test.shape[2])
+# ndrs = 4
+# test = np.ones((ndrs,2048,2048))
+# test = test + test*np.arange(ndrs)[:,None,None]+ test*(0.5*np.arange(ndrs)[:,None,None]**2)
+# #test[5,0,0]=400
+# test[2,0,0]=300
+# test[3,0,0]=90
+# #test[4,0,0]=20
+# test[1,2,0]=300
+# #y = test.reshape(test.shape[0],test.shape[1]*test.shape[2])
 
-start = time.time()
+# start = time.time()
 
-res = cnPolyfit(test, 2, "SLOW", 0.)
-end = time.time()
-#print(end - start)
+# res = cnPolyfit(test, 2, "SLOW", 0.)
+# end = time.time()
+# #print(end - start)
