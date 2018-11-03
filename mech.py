@@ -161,7 +161,7 @@ def ddMech(data,
   # else:
   #   linearityCorrected = data 
     
-  linearityCorrected = np.multiply(coef[1,:,:],dataTime[:,None,None]**2.)
+  linearityCorrected = np.multiply(coef[1,:,:],dataTime[:,None,None])
 #  linearityCorrectedTwo = coef[1,:,:]*dataTime[-1]
   
   #NOTE: linearized last - first frame is not exactly the same as
@@ -173,7 +173,7 @@ def ddMech(data,
   
   ################# 4. subtract the background ################################  
   backgroundSubtracted = linearityCorrected-backgroundDark
-  
+  plt.plot(dataTime,linearityCorrected[:,500,500],dataTime,backgroundDark[:,500,500],'r')
   
   
   ################# 5. flat fielding ##########################################
@@ -264,6 +264,6 @@ result,wavevector = ddMech(data,
 
 #%%
 fig, ax=plt.subplots()
-plt.imshow(result)
+plt.imshow(result,vmin=0,vmax=60000)
 # fig, ax=plt.subplots()
 # plt.imshow(result, vmin=0.,vmax=7000.)

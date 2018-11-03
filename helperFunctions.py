@@ -10,6 +10,7 @@ helper library
 import numpy as np  # Fast numeric arrays/matrices (FITS files imported as numpy matrices)
 from scipy.signal import find_peaks
 from scipy import exp
+import matplotlib.pyplot as plt
 
 def inversematrices(data):
     # From Kathleen Tatem
@@ -126,6 +127,90 @@ def matrixQuadfit(data,threshold=66000, mode="SLOW",ignoreRef=False):
 #import matplotlib.pyplot as plt
 #import time
 
+def cnRefSpectrum(cw,
+                  slit,
+                  desiredDispersion):
+  
+  if cw >= 3900. and cw <= 3968.:
+    print ("here")
+    #  3934 nm
+    wavenumber = np.array([2530.4232, 2531.7493, 2542.4886, 2542.8614, 2549.9993, 2552.3161])
+    waveWidth = np.array([0.014, 0.021, 0.014, 0.025, 0.016, 0.025]) #fwhm = 2.355*sigma
+    intensity = np.array([2,20,9,53,3,32])
+    names = ["Th I", "Ar I", "Th II", "Ar I", "Th I", "Ar I"]
+  elif cw >= 1063. and cw <= 1103.:
+    # 1083.0 nm
+    #Engleman 2003
+    # wavenumber = np.array([9136.3890, 9136,9082, 9151.2409, 9160.3878, 9162.2777,
+    #                       9170.7994, 9179.9819])
+    # waveWidth = np.array([0.020,0.019,0.018,0.021,0.022,0.026,0.028])
+    # intensity = np.array([4215,296,111,98,80,410,464])
+    # names = ["Th II", "Th II", "Th II", "Th I", "Th I", "Th I", "Th I"]
+    # Hinkle 2001
+    scale = 1.#np.mean(np.array([80/0.0066,98/0.0191,410/0.0326,464/0.0243]))
+    wavenumber = np.array([9152.115,9160.388,9162.278,
+                          9170.799,9173.53,9175.288,9176.116,9178.231,9179.982,
+                          9183.69,9185.371,9186.487,9187.864,9189.64,9197.142,
+                          9198.903,9199.360,9199.695,9201.688,9203.462,9204.055,
+                          9204.668,9207.824,9209.04,9211.130,9217.941,9218.820,
+                          9221.51,9222.53,9224.63,9226.583,9227.152,9227.527,
+                          9229.46,9231.543,9235.95,9236.23,9237.31,9239.545,
+                          9241.423,9242.606,9245.257,9245.683,9246.209,9250.433,
+                          9250.707,9252.848,9253.365,9254.553,9256.682,9258.28,
+                          9258.75,9260.11,9261.815,9268.425,9268.815,9269.478,
+                          9274.675,9276.494,9279.606,9282.150])
+    waveWidth = 2.3e-6*wavenumber #np.ones(wavenumber.shape)*0.6#/(2.35)
+    intensity = scale*np.array([0.0610,0.0191,0.0066,
+                          0.0326,0.0015,0.0013,0.0023,0.2303,0.0243,0.0101,0.0024,
+                          0.0077,1.5511,0.0010,0.0415,0.0063,0.0156,0.0053,0.0064,
+                          0.0230,0.0017,0.1426,0.0065,0.0017,0.0196,0.0072,0.0250,
+                          0.0016,0.0026,0.0013,0.0039,0.0039,0.0111,0.0017,0.0122,
+                          0.0024,0.0026,0.0097,0.0786,0.0078,0.0256,0.4545,0.1455,
+                          0.0626,0.0192,0.0472,0.0034,0.1019,0.0038,0.1442,0.0013,
+                          0.0023,0.0055,0.0111,0.0121,0.0557,0.0079,0.0080,0.0526,
+                          0.4566,0.0736])
+    names = ["Ar II","Th I","Th I",
+            "Th I","Ar II","Ar I","Th I","Ar I","Th I","Ar I","Th I","Th I",
+            "Ar I","Undef","Th I","Ar II","Ar II","Th I","Th I","Th I","Th II",
+            "Ar I","Th I","Undef","Th I","Ar I","Th I","Undef","Ar II","Undef",
+            "Th blend","Th II","Th I","Ar I","Ar II","Ar I","Undef","Ar I",
+            "Th II","Ar II","Ar II","Th I","Ar II","Th I","Th I","Ar I","Th I",
+            "Th I","Th I","Th I","Undef","Undef","Ar I","Th II","Th I","Th I",
+            "Ar II","Th I","Th I","Ar I","Ar I"]
+  
+  # convert to wavelengths  
+  wavelength = cnWnum2ang(wavenumber)/10.
+  fwhmWavelength = waveWidth/wavenumber*wavelength
+  
+  # use high resolution to create reference spectrum
+  artRes = 0.001
+  if slit == "175um":
+    slitProfile = np.int(np.ceil(6*desiredDispersion/artRes))
+  else:
+    slitProfile = np.int(np.ceil(2*desiredDispersion/artRes))
+  
+  x = np.arange(-3*slitProfile,3*slitProfile,1)
+  kernel = cnGauss(x,1,0,slitProfile/(2.355),0)
+  
+  # refsepctrum goes 1% above beyond max of lookup values
+  wl = np.arange(np.min(wavelength)-0.01*np.min(wavelength),
+                 np.max(wavelength)+0.01*np.max(wavelength),artRes)
+  spec = np.zeros(wl.shape)
+  
+  # create spectrum
+  for ii in range(len(wavelength)):
+    spec = spec + cnGauss(wl,intensity[ii],wavelength[ii],fwhmWavelength[ii]/(2.355),0)
+    
+  
+  # convolve with instrument profile
+  conv = np.convolve(spec,kernel,mode="same")/sum(kernel)
+  # normalize to the max value
+  conv = conv/np.max(conv)
+  # interpolate to desired dispersion values
+  allx = np.arange(np.min(wl), np.max(wl), desiredDispersion)
+  allfinal = np.interp(allx,wl,conv)
+  return allx, allfinal
+
 
 def cnFindSpatialPeaks(im,
                        peakWidth,
@@ -173,24 +258,36 @@ def cnFindSpectralPeaks(im,
   
   if invert:
     im = -1*im
-    
-  nrSpectra = len(spatialPeaks)
-  profile = np.zeros((nrSpectra,xLoc[1]-xLoc[0]))
-  result = []
   
-  for ii in range(nrSpectra):
-    profile[ii,:] = np.median(im[spatialPeaks[ii]-spatialWidths[ii]:
-      spatialPeaks[ii]+spatialWidths[ii]-1,xLoc[0]:xLoc[1]],axis=0)
-    peaks = find_peaks(profile[ii,:],width=peakWidth,
-                       prominence=prominenceLimits,
-                       height=heightLimits)
+  if len(np.shape(im)) > 1:  
+    nrSpectra = len(spatialPeaks)
+    profile = np.zeros((nrSpectra,xLoc[1]-xLoc[0]))
+    result = []
+    
+    for ii in range(nrSpectra):
+      profile[ii,:] = np.median(im[spatialPeaks[ii]-spatialWidths[ii]:
+        spatialPeaks[ii]+spatialWidths[ii]-1,xLoc[0]:xLoc[1]],axis=0)
+      peaks = find_peaks(profile[ii,:],width=peakWidth,
+                         prominence=prominenceLimits,
+                         height=heightLimits)
+      ind = peaks[0] 
+      widths = peaks[1]['widths']
+      prominences = peaks[1]['prominences']
+      heights = peaks[1]['peak_heights']
+      result.append((ind,widths,prominences,heights))
+    
+    return result, profile
+  else:
+    result = []
+    peaks = find_peaks(im,width=peakWidth,
+                         prominence=prominenceLimits,
+                         height=heightLimits)
     ind = peaks[0] 
     widths = peaks[1]['widths']
     prominences = peaks[1]['prominences']
     heights = peaks[1]['peak_heights']
     result.append((ind,widths,prominences,heights))
-  
-  return result, profile
+    return result
 
 
 def cnGauss(x,
@@ -232,11 +329,11 @@ def cnNonLinearityCorrection(data,
     for i in np.arange(data.shape[0]):
       # Do quadratic fit, use data up to threshold
       coef = cnPolyfit(np.squeeze(data[i,:,:,:]), order, mode, linThreshold)
+      
       if order == 2:
-        nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-        linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
+        linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],dataTime[:,None,None])
       else:
-        linearityCorrected[i,:,:,:] = data[i,:,:,:]
+        linearityCorrected[i,:,:,:] = np.multiply(coef[0,:,:],dataTime[:,None,None])
   else:
     # in this case we use the NDR number as our 'time' axis
     dataTime = np.arange(data.shape[0])
@@ -258,10 +355,9 @@ def cnNonLinearityCorrection(data,
     # Do quadratic fit, use data up to threshold
     coef = cnPolyfit(data, order, mode, linThreshold)
     if order == 2:
-      nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-      linearityCorrected = data - nonLinear
+      linearityCorrected = np.multiply(coef[1,:,:],dataTime[:,None,None])
     else:
-      linearityCorrected = data 
+      linearityCorrected = np.multiply(coef[0,:,:],dataTime[:,None,None])
       
   return linearityCorrected
   
@@ -371,7 +467,28 @@ def cnPolyfit(ramp, order, mode, threshold):
   return coef
   
 
+def cnWnum2ang(wavenum, help=False):
+ 
+  if help is True:
+    print('Convert input wavenumber in cm^-1 (vacuum) to air Angstroms')
+    print('angstrom=wnum2ang(wavenum)')
+    print('wavenum - floating point wavenumber in Kaysers')
+    print('(cm^-1 in vacuum)')
+    print('angstrom - wavelength in Angstroms computed for air')
+    angstrom=0.
+    return angstrom
+	
 
+  #Compute index of refraction from NBS formulation
+  a=1.+6432.8e-8
+  b=2949810.0
+  c=146.0e8
+  d=25540.0
+  e=41.0e8
+  n=a+(b/(c-wavenum**2.))+(d/(e-wavenum**2.))
+  
+  angstrom=1./(n*wavenum)*1.e8
+  return angstrom
 
 
 def test():

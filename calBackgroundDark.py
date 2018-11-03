@@ -141,7 +141,10 @@ def calBackgroundDark(data,
     # nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
     # linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
     # this returns the total linearize flux
-    linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],dataTime[:,None,None]**2.)
+    if order == 1:
+      linearityCorrected[i,:,:,:] = np.multiply(coef[0,:,:],dataTime[:,None,None])
+    else:
+      linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],dataTime[:,None,None])
     
       
       
@@ -183,11 +186,16 @@ def calBackgroundDark(data,
 # linThreshold = 0
 # mode = "SLOW"
 # c= calBackgroundDark(data,
-#                      linThreshold,
-#                      mode,
-#                      debug=True,
-#                      logPath=None,
-#                      writeToFile=True,
-#                      filePath='data/coronalObs-sensitivity/',
-#                      sequenceName='spMasterBackgroundDark',
-#                      fileFormat="both")
+#                       linThreshold,
+#                       mode,
+#                       debug=True,
+#                       logPath=None,
+#                       writeToFile=True,
+#                       filePath='data/coronalObs-sensitivity/',
+#                       sequenceName='spMasterBackgroundDark',
+#                       fileFormat="both")
+
+# #%%
+# print(np.min(c),np.max(c))
+# fig, ax=plt.subplots()
+# ax.imshow(c[1])

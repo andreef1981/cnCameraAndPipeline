@@ -120,28 +120,31 @@ def tharSpectrum(cw,
 
 
 cw = 3934.3
-wavelengthOnArray= np.array([3925.1, 3942.9])
+expectedDispersion=0.0174347
+delta = 512*expectedDispersion
+wavelengthOnArray= np.array([cw-delta, cw+delta])
+print(wavelengthOnArray)
 #cw = 1083.0
 #wavelengthOnArray= np.array([1080.8, 1085.2])
 bandpass = 20
 
 wavelength, spec,conv, newx,final,allx,allfinal = tharSpectrum(cw,wavelengthOnArray,bandpass)
-#np.save("data/spectra/SiIX-ThAr-wavelength.npy", newx)
-#np.save("data/spectra/SiIX-ThAr-spectrum.npy", final)
+np.save("data/spectra/SiIX-ThAr-wavelength.npy", newx)
+np.save("data/spectra/SiIX-ThAr-spectrum.npy", final/np.max(final))
 
 refSpectrum = np.concatenate((allx[None,],allfinal[None,]),axis=0)
 # np.save("data/spectra/SiIX-ThAr-reference-spectrum-175um.npy", refSpectrum)
 fig, ax=plt.subplots()
-ax.plot(wavelength,spec,wavelength,conv,'r', newx,final,'g')
+ax.plot(wavelength,spec,wavelength,conv,'r', newx,final/np.max(final),'g')
 
-allfinal = 30*allfinal
+# allfinal = 30*allfinal
 
-test=np.correlate(allfinal,final,mode="same")
-print(np.max(test))
-fig, ax=plt.subplots()
-ax.plot(test)
-ind = np.where(test==np.max(test))
-fig, ax=plt.subplots()
-ax.plot(allx[ind[0][0]-512:ind[0][0]+512],allfinal[ind[0][0]-512:ind[0][0]+512],'o',
-        newx,final)
+# test=np.correlate(allfinal,final,mode="same")
+# print(np.max(test))
+# fig, ax=plt.subplots()
+# ax.plot(test)
+# ind = np.where(test==np.max(test))
+# fig, ax=plt.subplots()
+# ax.plot(allx[ind[0][0]-512:ind[0][0]+512],allfinal[ind[0][0]-512:ind[0][0]+512],'o',
+#         newx,final)
 

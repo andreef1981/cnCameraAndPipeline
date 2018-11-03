@@ -133,38 +133,7 @@ def ddOne(data,
   
   ################# 3. make the linearity correction ##########################  
   
-  # in this case we use the NDR number as our 'time' axis
-  dataTime = np.arange(data.shape[0])
-  
-  if mode is not "SLOW":
-    # fast mode does not use the first frame
-    data = data[1:,:,:]
-    # time vector is shorter but must maintain the values
-    dataTime = dataTime[1:]
-  
-  # Check for order of correction
-  if len(dataTime) == 2:
-    order = 1
-  elif len(dataTime) > 2:
-    order = 2
-  else:
-    raise ValueError("sequence to short to apply polyfit")
-    
-  # Do quadratic fit, use data up to threshold
-  coef = cnPolyfit(data, order, mode, linThreshold)
-  if order == 2:
-    nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-    linearityCorrected = data - nonLinear
-  else:
-    linearityCorrected = data 
-#  linearityCorrectedTwo = coef[1,:,:]*dataTime[-1]
-  
-  #NOTE: linearized last - first frame is not exactly the same as
-  #      linear coefficient * time
-  
-#  print(linearityCorrected[0,0,0]-linearityCorrected[-1,0,0])
-#  print(coef[1,0,0]*dataTime[-1])
-  
+  linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=False)
   
   ################# 4. subtract the background ################################  
   backgroundSubtracted = linearityCorrected-backgroundDark

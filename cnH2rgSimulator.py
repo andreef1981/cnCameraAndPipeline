@@ -114,9 +114,13 @@ class cnH2rgRamp():
         if addThermalDark:
           # create a dark band in the two beams of the thermal dark frame
           bandwidth = 980 # needs to be even
-          
-          thermalDark.frame[:,0:int(bandwidth)] = (thermalDark.frame[:,0:int(bandwidth)]+i*self.frameTime*40.)
-          thermalDark.frame[:,-int(bandwidth)+1:] = (thermalDark.frame[:,-int(bandwidth)+1:]+i*self.frameTime*40.)
+          thermalScale= 0.1
+          thermalDark.frame[:,0:int(bandwidth)] = (thermalDark.frame[:,0:int(bandwidth)]+
+                           (i*self.frameTime*quadraticCoeff[1]*thermalScale)+
+                          (i*self.frameTime)**2.*quadraticCoeff[0]*thermalScale)
+          thermalDark.frame[:,-int(bandwidth)+1:] = (thermalDark.frame[:,-int(bandwidth)+1:]+
+                           (i*self.frameTime*quadraticCoeff[1]*thermalScale)+
+                          (i*self.frameTime)**2.*quadraticCoeff[0]*thermalScale)
           if addThermalDarkNoise:
             # use shot noise to simulate dark noise
             thermalDarkNoiseFrame = np.sqrt(thermalDark.frame)*np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))
@@ -215,7 +219,7 @@ spatialFwhmPinhole = 3 # pixels
 imDisk = np.tile(spatialDisk, (2048,1)).T
 imCorona = np.tile(spatialCorona, (2048,1)).T
 for ii in range(len(allY)):
-  profilePinhole = profilePinhole + gauss(y,0.1,allY[ii],spatialFwhmPinhole/2.35,0)
+  profilePinhole = profilePinhole + cnGauss(y,0.1,allY[ii],spatialFwhmPinhole/2.35,0)
 imPinhole = np.tile(profilePinhole, (2048,1)).T  
 
 mode = "slow"
@@ -234,6 +238,8 @@ elif mode is "fast":
 
 
 frameTime = np.load("frameTime.npy")
+print(frameTime)
+frameTime = 0.5
 frameDelay = 0.
 #sequenceName = "/instrumentDark/simInstrumentDark"
 #sequenceName = "/backgroundDark/simBackgroundDark"
@@ -241,12 +247,12 @@ frameDelay = 0.
 #sequenceName = "/gain/simGainVariation"
 #sequenceName = "/spectra/simSpectrum"
 #sequenceName = "/coronalObs-sensitivity/ciBackgroundDark"
-#sequenceName = "/coronalObs-sensitivity/spBackgroundDark"
+# sequenceName = "/coronalObs-sensitivity/spBackgroundDark"
 #sequenceName = "/coronalObs-sensitivity/spGain3"
 #sequenceName = "/coronalObs-sensitivity/ciGain1"
 #sequenceName = "/coronalObs-sensitivity/spObserve"
 #sequenceName = "/coronalObs-sensitivity/ciObserve"
-sequenceName = "/coronalObs-sensitivity/spWavecal"
+sequenceName = "/coronalObs-sensitivity/spWavecal175um"
 #sequenceName = "/generic/observe"
 
 #sequenceName = "/test/test"

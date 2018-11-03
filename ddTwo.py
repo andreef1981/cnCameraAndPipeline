@@ -147,7 +147,7 @@ a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve-ddOne",
               ramps=1, ndr=8)
 data = np.squeeze(a.read("fits",dtype=np.float32))
 
-waveCal = fits.open("data/coronalObs-sensitivity/spWavecal.000.fits")[0].data.astype(np.float32)
+waveCal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-equal.000.fits")[0].data.astype(np.float32)
 
 badPixels = fits.open("data/coronalObs-sensitivity/ciBadPixels.000.fits")[0].data.astype(np.uint8)
 

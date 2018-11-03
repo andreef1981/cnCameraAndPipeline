@@ -172,9 +172,9 @@ slit_width = 175.           # (52 or 175 [um]
 slit_height = 81.           # slit height in mm (42 or 81)
 
 # select wavelength
-lam = 3.9343
-chosenOrder = 14
-
+# lam = 3.9343
+chosenOrder = 48
+lam = 1.07725
 # blaze order is an integer
 bl_order, eff = blaze_order (lam, n, grating_blaze,blaze_function=True,theta=littrow)
 
@@ -188,6 +188,7 @@ chosenEfficiency = gratingEfficiencyTheoretical(lam,n,chosenOrder,grating_blaze,
 print(alpha,beta)
 print(alpha-(alpha-beta)/2.)
 print(alphaC,betaC)
+print(alphaC-(alphaC-betaC)/2.)
 print(alphaC-60.9612,betaC-60.9612)
 print('Effciency of chosen order is: ',chosenEfficiency)
 # linear dispersion is in nm/um 
