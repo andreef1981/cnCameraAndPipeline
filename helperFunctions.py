@@ -260,22 +260,39 @@ def cnFindSpectralPeaks(im,
     im = -1*im
   
   if len(np.shape(im)) > 1:  
-    nrSpectra = len(spatialPeaks)
-    profile = np.zeros((nrSpectra,xLoc[1]-xLoc[0]))
-    result = []
-    
-    for ii in range(nrSpectra):
-      profile[ii,:] = np.median(im[spatialPeaks[ii]-spatialWidths[ii]:
-        spatialPeaks[ii]+spatialWidths[ii]-1,xLoc[0]:xLoc[1]],axis=0)
-      peaks = find_peaks(profile[ii,:],width=peakWidth,
-                         prominence=prominenceLimits,
-                         height=heightLimits)
+    #special treatment if there is only one spatial profile
+    if np.size(spatialPeaks) == 1:
+      result = []
+      a= xLoc[0]
+      b=xLoc[1]
+      c = im[spatialPeaks-spatialWidths:spatialPeaks+spatialWidths-1,xLoc[0]:xLoc[1]]
+      profile = np.median(im[spatialPeaks-spatialWidths:spatialPeaks+spatialWidths-1,xLoc[0]:xLoc[1]],axis=0)
+      
+      peaks = find_peaks(profile,width=peakWidth,
+                           prominence=prominenceLimits,
+                           height=heightLimits)
       ind = peaks[0] 
       widths = peaks[1]['widths']
       prominences = peaks[1]['prominences']
       heights = peaks[1]['peak_heights']
       result.append((ind,widths,prominences,heights))
-    
+    else:
+      nrSpectra = len(spatialPeaks)
+      profile = np.zeros((nrSpectra,xLoc[1]-xLoc[0]))
+      result = []
+      
+      for ii in range(nrSpectra):
+        profile[ii,:] = np.median(im[spatialPeaks[ii]-spatialWidths[ii]:
+          spatialPeaks[ii]+spatialWidths[ii]-1,xLoc[0]:xLoc[1]],axis=0)
+        peaks = find_peaks(profile[ii,:],width=peakWidth,
+                           prominence=prominenceLimits,
+                           height=heightLimits)
+        ind = peaks[0] 
+        widths = peaks[1]['widths']
+        prominences = peaks[1]['prominences']
+        heights = peaks[1]['peak_heights']
+        result.append((ind,widths,prominences,heights))
+      
     return result, profile
   else:
     result = []

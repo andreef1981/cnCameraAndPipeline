@@ -19,7 +19,7 @@ result = np.zeros((len(widths),len(test)))
 for i in range(len(widths)):
   kernel = cnGauss(np.arange(-25,26),1,0,widths[i],0)
   result[i,:] = convolve(test,kernel,boundary='extend',normalize_kernel=True)
-  
+np.save("data/spectra/defocused-9-SiIX.npy", result) 
 #%%
 x = np.arange(2048)
 fig, ax=plt.subplots(num=1)

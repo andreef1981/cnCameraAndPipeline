@@ -11,18 +11,32 @@ Revision history
     
 """
 import numpy as np
+from helperFunctions import *
 #from astropy.io import fits
-#from cnPipeline import *
+from cnPipeline import *
 #from ddLinearity import *
+from calBackgroundDark import *
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 def calFocus1(data,
               stagePosition,
-              dark,
-              gain,
+              slit,
+              backgroundDark,
+              gainTable,
               badPixels,
               oldFocus,
-              threshold=None,
-              simulateChange=False):
+              mode,
+              linThreshold,
+              changeThreshold,
+              debug=False,
+              logPath=None,
+              simulateChange=False,
+              writeToFile=False,
+              path=None,
+              sequenceName=None,
+              fileFormat='fits'):
+  
   
   #TODO: should we return the focus position in user or raw units
   #      (float32/uint64 for positions)
@@ -42,19 +56,33 @@ def calFocus1(data,
         4D data cube that will be used to determine the best focus position.
     stagePosition : (#ramps,) ndarray, float32/uint64
         1D array that contains the positions of the focus stage for each ramp.
-    dark : (#NDRs, 2048, 2048) ndarray, float32
+    slit : string, "175", "52", "PinHM"
+        identifying which slit mask is used 
+    backgroundDark : (#NDRs, 2048, 2048) ndarray, float32
         stored background dark master ramp from calibration store
-    gain: (2048, 2048) ndarray, float32
+    gainTable: (2048, 2048) ndarray, float32
         stored gain table from calibration store
     badPixels: (2048, 2048) ndarray, unit16
         stored bad pixel mask
     oldFocus: float32/int64
         the prevously determined focus position
-    threshold : float32/uint64
+    mode : string, default="SLOW"
+        defines the readout mode of the camera
+    linThreshold : float
+        threshold for the quadratic fit. Everything above/below will be excluded.
+    changeThreshold : float32
         change beyond which change flag is set
     simulateChange: bolean
         test flag
-
+    writeToFile : bolean, optional, default=False
+        writing to files for testing
+    path: string
+        directory to which optinal fits files will be written to
+    sequenceName: string
+        name of sequence to which optinal fits files will be written to
+    fileFormat: string ('fits' | 'arr')
+        writing fits files or little endian binary arrays
+        
     Returns
     -------
     newFocus : float32/int64
@@ -75,30 +103,187 @@ def calFocus1(data,
 
     >>> 
    """
-  # First perform linearity correction
+  if not logPath is None:
+    file = open(logPath+"wavecal_"+datetime.now().strftime("%Y-%m-%d_%H:%M:%S")+".log", 'w')
+    # file = open(logPath+"wavecal.log", 'w')
+ 
+  ################# 1. make some checks and conversions #######################
   
-  # Second subtract linearized background
   
-  # Third perform flat fielding
+  # turn into float for what is to come
+  data = np.float32(data)
   
-  # Fourth ignore/interpolate bad pixels
+  ################# 2. reference pixel correction #############################
+   #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
+  # needed for slow mode only?
+  if mode is "SLOW":
+    #do something
+    data = data
+    
+  if debug:
+    try:
+      file.write("camera mode is "+mode+"\n")
+    except:
+      print("camera mode is "+mode+"\n")
+    
+    
+  ################# 3. make the linearity correction ##########################
+  if len(data.shape)==4:
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=True)
+  else:
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=False)
   
-  # Fifth loop through sequences to find spatial and spectral focuses
-  # TODO: helper function to find spatial bands for pinhole mask
-  # TODO: helper function to find spectral lines in pinhole spectra
-  # TODO: helper function for gaussian fit to spatial or spectral profile
-  # TODO: remapping the beams would greatly help with detection of edges an fitting
   
-  # Sixth determine if focus has changed
-  # TODO: what is the threshold for a change
+  ################# 4. subtract the background ################################  
+  backgroundSubtracted = linearityCorrected-backgroundDark
   
+  
+  ################# 5. flat fielding ##########################################
+  gainCorrected = backgroundSubtracted*gainTable
+  
+  # if len(data.shape)==4:
+  #   gainCorrected = np.average(gainCorrected, axis=0)
+  # for slow mode signal is inverted
+  if mode is "SLOW":
+    result = gainCorrected[:,0,:,:] - gainCorrected[:,-1,:,:]
+  else:
+    result = gainCorrected[:,-1,:,:] - gainCorrected[:,0,:,:]
+  ################# 6.beam mapping ############################################
+  
+  #TODO: beam mapping
+  
+  ################# 7. find spatial & spectral profiles #######################
+  #TODO: pinhole mask implementation
+  #TODO: spatial focus metric
+  if debug:
+    fig, ax=plt.subplots()
+    im=plt.imshow(result[4])#, norm=LogNorm(vmin=100, vmax=10000))
+    fig.colorbar(im)
+    plt.show()
+    
+  if slit =="175um":
+    # long slit should be covered by spectrum
+    spatialPeaks = np.uint16([1024])
+    spatialWidths = np.uint16([1024])
+    avLeft = np.zeros(result.shape[0],dtype=np.float16())
+    avRight = np.zeros(result.shape[0],dtype=np.float16())
+    for i in range(result.shape[0]):
+      print(np.mean(result[i,:1024,:]),np.max(result[i,:,:]))
+      # left side
+      spectralPeaks, leftProfile = cnFindSpectralPeaks(result[i,:,:],
+                                        [2,100],
+                                        spatialPeaks,
+                                        spatialWidths,
+                                        [0,1024],
+                                        [100, 0.9*np.max(-1*result[i,:1024,:])-np.mean(-1*result[i,:1024,:])],
+                                        [np.mean(-1*result[i,:1024,:]),0],
+                                        invert=True)
+      avLeft[i] = np.mean(spectralPeaks[0][1])
+      # right side
+      spectralPeaks, rightProfile = cnFindSpectralPeaks(result[i,:,:],
+                                        [2,100],
+                                        spatialPeaks,
+                                        spatialWidths,
+                                        [1024,2048],
+                                        [100, 0.9*np.max(-1*result[i,1024:,:])-np.mean(-1*result[i,1024:,:])],
+                                        [np.mean(-1*result[i,1024:,:]),0],
+                                        invert=True)
+      avRight[i] = np.mean(spectralPeaks[0][1])
+    if debug:
+      print(avLeft,avRight)
+    
+    #TODO: use both sides to determine best focus
+    # fit quadratic function to line width values
+    parLeft = np.polyfit(stagePosition,np.float64(avLeft),2)
+    hr = np.arange(np.min(stagePosition),np.max(stagePosition),0.001)
+    fitterLeft = np.polyval(parLeft,hr)
+    indLeft = np.argmin(fitterLeft)
+    
+    newFocus = hr[indLeft]  
+  
+    
   if simulateChange:
-    newFocus = oldFocus+1.0 # assuming user units simulate change by 1mm
+    newFocus = oldFocus+5.0 # assuming user units simulate change by 5mm
+    
+    
+  ################# 8. check if focus changed #################################  
+  if np.abs(np.median(newFocus-oldFocus)) > changeThreshold:
     changeFlag = True
   else:
-    newFocus = oldFocus
     changeFlag = False
+
+  
+  # for test purposes lets write the files to fits
+  if writeToFile:
+    if fileFormat == 'fits':
+      hdu = fits.PrimaryHDU(newFocus)
+      hdu.writeto(path+sequenceName+'.fits',overwrite=True)
+    else:
+      newFocus.tofile(path+sequenceName+'.arr',sep="")
   
   return newFocus, changeFlag
 
 
+# # reading the data
+# # cssStyle needs ramps and ndr information
+# linThreshold = 0
+# mode = "SLOW"
+
+# a=cnH2rgRamps("data/coronalObs-sensitivity/spFocus1-175um.",
+#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#               ramps=9, ndr=5)
+# data = np.squeeze(a.read("fits",dtype=np.uint16))
+# # reading the background data
+# b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-background",
+#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#               ramps=3, ndr=5)
+
+# dark=b.read("fits",dtype=np.uint16)
+# backgroundDark= calBackgroundDark(dark,
+#                                   linThreshold,
+#                                   mode,
+#                                   debug=False,
+#                                   logPath=None,
+#                                   writeToFile=False)
+#%%
+# gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+
+# changeThreshold = 0.5
+# exact focus
+# oldFocus = -10.188
+# within threshold
+# oldFocus = -9.8
+# outside threshold
+# oldFocus = -9.
+
+# oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
+
+# badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
+
+# c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
+#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=2)
+# beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
+
+#%%
+# slit="175um"
+
+# stagePositions = np.array([-9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
+
+# newFocus, changeFlag = calFocus1(data,
+#                                    stagePositions,
+#                                    slit,
+#                                     backgroundDark,
+#                                     gainTable,
+#                                     badPixels,
+#                                     oldFocus,
+#                                     mode,
+#                                     linThreshold,
+#                                     changeThreshold,
+#                                     debug=True,
+#                                     logPath=None,
+#                                     simulateChange=False,
+#                                     writeToFile=False,
+#                                     path=None,
+#                                     sequenceName=None,
+#                                     fileFormat='fits')

@@ -70,7 +70,7 @@ def calWavecal(data,
         stored bad pixel mask
     oldWavecal: (2048, 2048) ndarray, float32
         previous wavelength calibration from calibration store
-    mode : string, default="SLOW"
+    mode : string
         defines the readout mode of the camera
     linThreshold : float
         threshold for the quadratic fit. Everything above will be excluded.

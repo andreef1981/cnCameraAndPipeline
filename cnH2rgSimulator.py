@@ -78,6 +78,8 @@ class cnH2rgRamp():
     for j in range(self.nrSequences):
       if spectrumType is "modulated":
         spectrum = np.tile(self.spectrum[j,:],(2048,1))
+      elif spectrumType is "defocused":
+        spectrum = np.tile(self.spectrum[j,:],(2048,1))
       else:
         spectrum = np.tile(np.concatenate((self.spectrum,self.spectrum)),(2048,1))
       for i in range(self.ndr):
@@ -221,10 +223,10 @@ imCorona = np.tile(spatialCorona, (2048,1)).T
 for ii in range(len(allY)):
   profilePinhole = profilePinhole + cnGauss(y,0.1,allY[ii],spatialFwhmPinhole/2.35,0)
 imPinhole = np.tile(profilePinhole, (2048,1)).T  
-
+imSinglePinhole = np.tile(cnGauss(y,1.,1024,10/2.35,0), (2048,1)).T
 mode = "slow"
-ndr = 2
-nrSequences = 3
+ndr = 5
+nrSequences = 9
 arrayTemperature = 130. 
 biasLevelOffsetScaling =  0. # realistic value is 0.001
 # bias, readnoise values given in ADU
@@ -252,10 +254,13 @@ frameDelay = 0.
 #sequenceName = "/coronalObs-sensitivity/ciGain1"
 #sequenceName = "/coronalObs-sensitivity/spObserve"
 #sequenceName = "/coronalObs-sensitivity/ciObserve"
-sequenceName = "/coronalObs-sensitivity/spWavecal175um"
+# sequenceName = "/coronalObs-sensitivity/spWavecal175um"
+# sequenceName = "/coronalObs-sensitivity/spFocus1-175um"
+# sequenceName = "/coronalObs-sensitivity/spFocus-background"
+sequenceName = "/coronalObs-sensitivity/spFocus2-GOSpinhole"
 #sequenceName = "/generic/observe"
 
-#sequenceName = "/test/test"
+# sequenceName = "/test/test"
 
 # create fixe gain variation
 #varVector = np.random.normal(loc=1.0, scale=0.1, size=2048)
@@ -266,6 +271,7 @@ sequenceName = "/coronalObs-sensitivity/spWavecal175um"
 heSpectrum = fits.open("data/spectra/he_spectrum_combined-32bitfloat.fits")[0].data.astype(np.float32)
 gainVariation = fits.open("data/gain/2048row_gainVariation.fits")[0].data.astype(np.float32)
 siSpectrum = np.load("data/spectra/modulated-8-SiIX.npy")
+siSpectrumDefocused = np.load("data/spectra/defocused-9-SiIX.npy")
 tharSpectrum = np.load("data/spectra/SiIX-ThAr-spectrum.npy")
 #plt.imshow(siSpectrum)
 #TODO: instrument dark noise has issue with non matching array sizes
@@ -275,8 +281,8 @@ a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling
              addThermalDark=True, addThermalDarkNoise=False,
              addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
              gainVariation=gainVariation,
-             spectrum=tharSpectrum, spectrumType=None,
-             spatialProfile=imCorona,fileFormat='both')    
+             spectrum=siSpectrumDefocused, spectrumType="defocused",
+             spatialProfile=imSinglePinhole,fileFormat='both')    
 
 # Generic data set
 #a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
