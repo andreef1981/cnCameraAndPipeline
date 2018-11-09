@@ -16,11 +16,13 @@ Revision history
     - added debuging and logging
     - now use loop and cnPolyfit for linear correction
     - added mode, linThreshold inputs
+7  November 2018:
+    make use of cnLinearityCorrection function from the helper library
     
 """
 import numpy as np
-from astropy.io import fits
-from cnPipeline import *
+# from astropy.io import fits
+# from cnPipeline import *
 from helperFunctions import *
 
 
@@ -114,38 +116,42 @@ def calBackgroundDark(data,
   
   ################# 3. make the linearity correction ##########################  
   
-  # in this case we use the NDR number as our 'time' axis
-  dataTime = np.arange(data.shape[1])
+  # # in this case we use the NDR number as our 'time' axis
+  # dataTime = np.arange(data.shape[1])
   
-  if mode is not "SLOW":
-    # fast mode does not use the first frame
-    data = data[:,1:,:,:]
-    # time vector is shorter but must maintain the values
-    dataTime = dataTime[1:]
+  # if mode is not "SLOW":
+  #   # fast mode does not use the first frame
+  #   data = data[:,1:,:,:]
+  #   # time vector is shorter but must maintain the values
+  #   dataTime = dataTime[1:]
   
-  linearityCorrected = np.zeros(data.shape,dtype=np.float32)
-  # need to loop to use cnPolyfit
+  # linearityCorrected = np.zeros(data.shape,dtype=np.float32)
+  # # need to loop to use cnPolyfit
   
-  # Check for order of correction
-  if len(dataTime) == 2:
-    order = 1
-  elif len(dataTime) > 2:
-    order = 2
+  # # Check for order of correction
+  # if len(dataTime) == 2:
+  #   order = 1
+  # elif len(dataTime) > 2:
+  #   order = 2
+  # else:
+  #   raise ValueError("sequence to short to apply polyfit")
+    
+  # for i in np.arange(data.shape[0]):
+  #   # Do quadratic fit, use data up to threshold
+  #   coef = cnPolyfit(np.squeeze(data[i,:,:,:]), order, mode, linThreshold)
+    
+  #   # nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
+  #   # linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
+  #   # this returns the total linearize flux
+  #   if order == 1:
+  #     linearityCorrected[i,:,:,:] = np.multiply(coef[0,:,:],dataTime[:,None,None])
+  #   else:
+  #     linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],dataTime[:,None,None])
+    
+  if len(data.shape)==4:
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=True)
   else:
-    raise ValueError("sequence to short to apply polyfit")
-    
-  for i in np.arange(data.shape[0]):
-    # Do quadratic fit, use data up to threshold
-    coef = cnPolyfit(np.squeeze(data[i,:,:,:]), order, mode, linThreshold)
-    
-    # nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-    # linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
-    # this returns the total linearize flux
-    if order == 1:
-      linearityCorrected[i,:,:,:] = np.multiply(coef[0,:,:],dataTime[:,None,None])
-    else:
-      linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],dataTime[:,None,None])
-    
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=False)
       
       
   ################# 4. make the linearity correction ##########################
@@ -179,9 +185,9 @@ def calBackgroundDark(data,
 
 
 
-# b=cnH2rgRamps("data/coronalObs-sensitivity/spBackgroundDark",
+# b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-background.",
 #               "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-#               ramps=3, ndr=2)
+#               ramps=3, ndr=5)
 # data=b.read("fits",dtype=np.uint16)
 # linThreshold = 0
 # mode = "SLOW"
@@ -192,7 +198,7 @@ def calBackgroundDark(data,
 #                       logPath=None,
 #                       writeToFile=True,
 #                       filePath='data/coronalObs-sensitivity/',
-#                       sequenceName='spMasterBackgroundDark',
+#                       sequenceName='spFocus-masterBackground',
 #                       fileFormat="both")
 
 # #%%

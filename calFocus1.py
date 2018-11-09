@@ -12,9 +12,8 @@ Revision history
 """
 import numpy as np
 from helperFunctions import *
-#from astropy.io import fits
+from astropy.io import fits
 from cnPipeline import *
-#from ddLinearity import *
 from calBackgroundDark import *
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -156,15 +155,15 @@ def calFocus1(data,
   #TODO: pinhole mask implementation
   #TODO: spatial focus metric
   if debug:
-    fig, ax=plt.subplots()
+    fig, ax=plt.subplots(num=1)
     im=plt.imshow(result[4])#, norm=LogNorm(vmin=100, vmax=10000))
     fig.colorbar(im)
     plt.show()
     
   if slit =="175um":
     # long slit should be covered by spectrum
-    spatialPeaks = np.uint16([1024])
-    spatialWidths = np.uint16([1024])
+    spatialPeaks = 1024
+    spatialWidths = 1024
     avLeft = np.zeros(result.shape[0],dtype=np.float16())
     avRight = np.zeros(result.shape[0],dtype=np.float16())
     for i in range(result.shape[0]):
@@ -234,27 +233,22 @@ def calFocus1(data,
 #               ramps=9, ndr=5)
 # data = np.squeeze(a.read("fits",dtype=np.uint16))
 # # reading the background data
-# b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-background",
+# b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-masterBackground",
 #               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#               ramps=3, ndr=5)
+#               ramps=1, ndr=5)
 
-# dark=b.read("fits",dtype=np.uint16)
-# backgroundDark= calBackgroundDark(dark,
-#                                   linThreshold,
-#                                   mode,
-#                                   debug=False,
-#                                   logPath=None,
-#                                   writeToFile=False)
-#%%
+# backgroundDark=np.squeeze(b.read("fits",dtype=np.float32))
+
+# #%%
 # gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
 
 # changeThreshold = 0.5
-# exact focus
+# #exact focus
 # oldFocus = -10.188
-# within threshold
-# oldFocus = -9.8
-# outside threshold
-# oldFocus = -9.
+# #within threshold
+# # oldFocus = -9.8
+# #outside threshold
+# # oldFocus = -9.
 
 # oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
 
@@ -265,14 +259,14 @@ def calFocus1(data,
 #               ramps=1, ndr=2)
 # beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
 
-#%%
+# #%%
 # slit="175um"
 
 # stagePositions = np.array([-9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
 
 # newFocus, changeFlag = calFocus1(data,
-#                                    stagePositions,
-#                                    slit,
+#                                     stagePositions,
+#                                     slit,
 #                                     backgroundDark,
 #                                     gainTable,
 #                                     badPixels,
@@ -280,7 +274,7 @@ def calFocus1(data,
 #                                     mode,
 #                                     linThreshold,
 #                                     changeThreshold,
-#                                     debug=True,
+#                                     debug=False,
 #                                     logPath=None,
 #                                     simulateChange=False,
 #                                     writeToFile=False,

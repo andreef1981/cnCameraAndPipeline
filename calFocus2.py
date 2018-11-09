@@ -12,12 +12,12 @@ Revision history
 """
 import numpy as np
 from helperFunctions import *
-#from astropy.io import fits
-# from cnPipeline import *
-#from ddLinearity import *
-# from calBackgroundDark import *
-# import matplotlib.pyplot as plt
-# from matplotlib.colors import LogNorm
+from astropy.io import fits
+from cnPipeline import *
+from ddLinearity import *
+from calBackgroundDark import *
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 
 def calFocus2(data,
               stagePosition,
@@ -28,6 +28,7 @@ def calFocus2(data,
               mode,
               linThreshold,
               changeThreshold,
+              camera,
               debug=False,
               logPath=None,
               simulateChange=False,
@@ -36,6 +37,7 @@ def calFocus2(data,
               sequenceName=None,
               fileFormat='fits'):
   
+  #TODO: 
   
   #TODO: should we return the focus position in user or raw units
   #      (float32/uint64 for positions)
@@ -69,6 +71,8 @@ def calFocus2(data,
         threshold for the quadratic fit. Everything above/below will be excluded.
     changeThreshold : float32
         change beyond which change flag is set
+    camera : string
+        string describing which instrument is used "SP" or "CI"
     simulateChange: bolean
         test flag
     writeToFile : bolean, optional, default=False
@@ -130,14 +134,27 @@ def calFocus2(data,
   else:
     linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=False)
   
-  
+  if debug:
+    fig, ax=plt.subplots(num=2)
+    im=plt.imshow(linearityCorrected[4,4])#, norm=LogNorm(vmin=100, vmax=10000))
+    fig.colorbar(im)
+    plt.show()
   ################# 4. subtract the background ################################  
   backgroundSubtracted = linearityCorrected-backgroundDark
   
+  if debug:
+    fig, ax=plt.subplots(num=3)
+    im=plt.imshow(backgroundSubtracted[4,4])#, norm=LogNorm(vmin=100, vmax=10000))
+    fig.colorbar(im)
+    plt.show()
   
   ################# 5. flat fielding ##########################################
   gainCorrected = backgroundSubtracted*gainTable
-  
+  if debug:
+    fig, ax=plt.subplots(num=4)
+    im=plt.imshow(gainCorrected[4,4])#, norm=LogNorm(vmin=100, vmax=10000))
+    fig.colorbar(im)
+    plt.show()
   # if len(data.shape)==4:
   #   gainCorrected = np.average(gainCorrected, axis=0)
   # for slow mode signal is inverted
@@ -153,7 +170,7 @@ def calFocus2(data,
   #TODO: pinhole mask implementation
   #TODO: spatial focus metric
   if debug:
-    fig, ax=plt.subplots()
+    fig, ax=plt.subplots(num=5)
     im=plt.imshow(result[4])#, norm=LogNorm(vmin=100, vmax=10000))
     fig.colorbar(im)
     plt.show()
@@ -176,6 +193,7 @@ def calFocus2(data,
     
     # There should be only one peak from GOS pinhole
     if debug:
+      print(ind, 'widths')
       print(widths, 'widths')
     spatialPeaksLeft.append(int(ind))
     spatialWidthsLeft.append(int(widths))
@@ -245,69 +263,65 @@ def calFocus2(data,
   return newFocus, changeFlag
 
 
-# # reading the data
-# # cssStyle needs ramps and ndr information
-# linThreshold = 0
-# mode = "SLOW"
+# reading the data
+# cssStyle needs ramps and ndr information
+linThreshold = 0
+mode = "SLOW"
 
-# a=cnH2rgRamps("data/coronalObs-sensitivity/spFocus2-GOSpinhole",
-#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#               ramps=9, ndr=5)
-# data = np.squeeze(a.read("fits",dtype=np.uint16))
-# # reading the background data
-# b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-background",
-#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#               ramps=3, ndr=5)
+a=cnH2rgRamps("data/coronalObs-sensitivity/spFocus2-GOSpinhole",
+              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+              ramps=9, ndr=5)
+data = np.squeeze(a.read("fits",dtype=np.uint16))
+# reading the background data
+b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-masterBackground",
+              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+              ramps=1, ndr=5)
 
-# dark=b.read("fits",dtype=np.uint16)
-# backgroundDark= calBackgroundDark(dark,
-#                                   linThreshold,
-#                                   mode,
-#                                   debug=False,
-#                                   logPath=None,
-#                                   writeToFile=False)
-#%%
-# gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
-
-# changeThreshold = 0.5
-# exact focus
-# oldFocus = -10.193
-# within threshold
-# oldFocus = -9.8
-# outside threshold
-# oldFocus = -9.
-
-# oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
-
-# badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
-
-# c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
-#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#               ramps=1, ndr=2)
-# beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
+backgroundDark=np.squeeze(b.read("fits",dtype=np.float32))
 
 #%%
-# fig, ax=plt.subplots()
+gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+
+changeThreshold = 0.5
+#exact focus
+oldFocus = -10.193
+#within threshold
+#oldFocus = -9.8
+#outside threshold
+#oldFocus = -9.
+camera = "SP"
+oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
+
+badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
+
+c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
+              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+              ramps=1, ndr=2)
+beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
+
+#%%
+# fig, ax=plt.subplots(num=1)
 # im=plt.imshow(data[0,4])#, norm=LogNorm(vmin=100, vmax=10000))
 # fig.colorbar(im)
 # plt.show()
 #%%
 
-# stagePositions = np.array([-9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
+stagePositions = np.array([-9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
 
-# newFocus, changeFlag = calFocus2(data,
-#                                    stagePositions,
-#                                     backgroundDark,
-#                                     gainTable,
-#                                     badPixels,
-#                                     oldFocus,
-#                                     mode,
-#                                     linThreshold,
-#                                     changeThreshold,
-#                                     debug=False,
-#                                     logPath=None,
-#                                     simulateChange=False,
-#                                     writeToFile=False,
-#                                     path=None,
-#                                     sequenceName=None,
-#                                     fileFormat='fits')
+newFocus, changeFlag = calFocus2(data,
+                                    stagePositions,
+                                    backgroundDark,
+                                    gainTable,
+                                    badPixels,
+                                    oldFocus,
+                                    mode,
+                                    linThreshold,
+                                    changeThreshold,
+                                    camera,
+                                    debug=True,
+                                    logPath=None,
+                                    simulateChange=False,
+                                    writeToFile=False,
+                                    path=None,
+                                    sequenceName=None,
+                                    fileFormat='fits')

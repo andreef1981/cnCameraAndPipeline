@@ -14,7 +14,7 @@ import numpy as np
 def calAlign1(data,
               stagePositionFM1A,
               stagePositionFM1B,
-              instrument,
+              camera,
               dark,
               gain,
               badPixels,
@@ -48,8 +48,8 @@ def calAlign1(data,
         1D array that contains the positions of the FM1A stage for each ramp.
     stagePositionFM1B : (#ramps,) ndarray, float32/uint64
         1D array that contains the positions of the FM1B stage for each ramp.
-    instrument : string
-        name string of instrument that will be aligned
+    camera : string
+        string describing which instrument is used "SP" or "CI"
     dark : (#NDRs, 2048, 2048) ndarray, float32
         stored background dark master ramp from calibration store
     gain: (2048, 2048) ndarray, float32
