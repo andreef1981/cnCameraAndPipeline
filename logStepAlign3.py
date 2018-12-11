@@ -10,12 +10,11 @@ Revision history
 ----------------
 """
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
-def logStepAlign3(centerPosition,
-                  centerWavelength,
+def logStepAlign3(centerWavelength,
                   nrSteps,
-                  stepScaling=100,
+                  fraction=0.1,
                   growthFactor=0.1759):
   #???: are angles the right units to return?
   
@@ -24,22 +23,20 @@ def logStepAlign3(centerPosition,
   
    Parameters
     ----------
-    centerPosition : float16
-        position around which the scan pattern is centered
-    centerWavelength : float16
+    centerWavelength : float32
         selected center wavelength for the scan in nm
     nrSteps : uint16
         # of steps along the spiral.
-    stepScaling : optional, float, default=10
-        optional inpput for scaling the step size
+    fraction : float16
+        optional input specifying how much of the spectral range on the
+        detector will be scanned over
     growthFactor : optional, float, default=0.1759
-        optional growth factor for the spiral
+        optional growth factor for the steps
     
     
-        
     Returns
     -------
-    angle : (nrSteps,1) ndarray, float16
+    angle : (nrSteps,1) ndarray, float32
         vector containing the grating angles for the scan
     
 
@@ -70,19 +67,42 @@ def logStepAlign3(centerPosition,
                                    (centerWavelength*n*1e-6))
   beta = np.degrees( np.arcsin( (1e-6*blorder*n*centerWavelength) / 
                              (2. * np.cos(-1.*np.radians(theta))) ) ) - theta
-  # alpha = np.degrees( np.arcsin((1e-6*blorder*n*centerWavelength) -
-  #                             (np.sin(np.radians(beta))) ) )
+#  alpha = np.degrees( np.arcsin((1e-6*blorder*n*centerWavelength) -
+#                               (np.sin(np.radians(beta))) ) )
   dlamdx = (1e3*np.cos(np.radians(beta))) / (blorder*n*Lb)
   rangeArray =  dlamdx*pixel_size*spectral_pixels
-  print(rangeArray)
+#  gratingAngle = alpha-(alpha-beta)/2.
+#  gratingAngle = beta + theta
+  
+  
+  maxW = centerWavelength+ fraction*rangeArray
+  minW = centerWavelength- fraction*rangeArray
+  maxBeta = np.degrees( np.arcsin( (1e-6*blorder*n*maxW) / 
+                             (2. * np.cos(-1.*np.radians(theta))) ) ) - theta
+  minBeta = np.degrees( np.arcsin( (1e-6*blorder*n*minW) / 
+                             (2. * np.cos(-1.*np.radians(theta))) ) ) - theta
+  maxGratingAngle = maxBeta + theta
+  minGratingAngle = minBeta + theta
+  
   t = np.arange(nrSteps)
-  angle = stepScaling*np.exp(growthFactor*t)
+  exSum = 0
+  for i in range(nrSteps):
+    exSum = exSum + np.exp(i*growthFactor)
+  
+  stepScaling = (maxGratingAngle-minGratingAngle)/exSum
+#  print(minBeta,maxBeta,minGratingAngle,maxGratingAngle,stepScaling)
+#  print(maxW,maxBeta,maxGratingAngle,stepScaling)
+  angle = np.zeros(nrSteps+1)
+  angle[0] = minGratingAngle
+  
+  for i in np.arange(1,nrSteps+1):
+    angle[i] = angle[i-1] + stepScaling*np.exp(growthFactor*t[i-1])
   
     
-  return np.float16(angle)
+  return np.float32(angle)
 
-a = logStepAlign3(63.3,1083.,15)
-
-fig, ax=plt.subplots()
-ax.plot(a)
-plt.show()
+#a = logStepAlign3(1083.,5,0.1)
+#print(a)
+#fig, ax=plt.subplots()
+#ax.plot(a)
+#plt.show()
