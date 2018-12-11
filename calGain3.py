@@ -62,9 +62,9 @@ def calGain3(data,
         stored bad pixel mask
     oldGain: (2048, 2048) ndarray, float32
         the prevously determined gain table
-    linThreshold : float, default=0 for slow mode
+    linThreshold : float
         threshold for the quadratic fit. Everything above will be excluded.
-    mode : string, default="SLOW"
+    mode : string, "SLOW", "FAST", "LineByLine"
         defines the readout mode of the camera
     threshold : float32/uint64
         change beyond which change flag is set
