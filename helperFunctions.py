@@ -244,6 +244,42 @@ def cnFindSpatialPeaks(im,
   
   return ind, widths, prominences, heights, profile
 
+def cnFind2DSpatialPeak(im,
+                         myAxis,
+                         peakWidth,
+                         xLoc,
+                         averageFwhm,
+                         prominenceLimits,
+                         heightLimits,
+                         invert=False):
+  
+  # try to estimate a maximum height from the data
+  #TODO: use bad pixel mask to refine this
+  if invert:
+    im = -1*im
+  # profile is calculated from certain x location
+  if isinstance(xLoc,int):
+    # averaging over several columns
+    if averageFwhm>0:
+      profile=np.mean(im[:,xLoc-averageFwhm:xLoc+averageFwhm-1], axis=myAxis)
+    # only use a single column (could be affected by bad pixels)
+    else:
+      profile=im[:,xLoc]
+  # use given xLoc interval for median profile
+  else:
+    if myAxis==0:
+      profile=np.mean(im[xLoc[0]:xLoc[1],:], axis=myAxis)
+    elif myAxis==1:
+      profile=np.mean(im[:,xLoc[0]:xLoc[1]], axis=myAxis)
+  peaks = find_peaks(profile,width=peakWidth,prominence=prominenceLimits,
+                     height=heightLimits)
+  ind = peaks[0] 
+  widths = peaks[1]['widths']
+  prominences = peaks[1]['prominences']
+  heights = peaks[1]['peak_heights']
+  
+  return ind, widths, prominences, heights, profile
+
 def cnFindSpectralPeaks(im,
                         peakWidth,
                         spatialPeaks,

@@ -39,6 +39,12 @@ def calAlign1(data,
               fileFormat='fits'):
 
   #???: does the dark need to be a "GOS thermal dark"?
+  #!!!: need to add slit information
+  #!!!: need to add stage scale information or becky to use it to convert
+  #     arcsec information into mu for stage
+  #???: How do we ensure the center position in mu is updated in porperty database 
+  #     from calibration store when IC is brought up?
+  #???: What is the propper scale in the property data base arcsec/mu
   
   """
   Returns the best center position of the beam steering mirror FM1A and FM1B 
@@ -118,6 +124,7 @@ def calAlign1(data,
     
     Notes
     -----
+      - GOS has two pinholse 0.2 and 1 arcsec
     
     Examples
     --------
@@ -225,3 +232,15 @@ def calAlign1(data,
   return newAlignFM1A, newAlignFM1B, newStepSizeFM1A, newStepSizeFM1B,\
          newRotationFM1A, newRotationFM1B, changeFlag
 
+
+# spectrograph 0 order
+xscale = 8.3333 #pixel/arcsec
+yscale = 8.3333 #pixel/arcsec
+givenX = np.arange(-19, 20, 2)
+givenY = np.arange(-110, 120, 20)
+ 
+# context imager
+xscale = 20 #pixel/arcsec
+yscale = 20 #pixel/arcsec
+givenX = np.arange(-45, 45, 5)
+givenY = np.arange(-45, 45, 10)
