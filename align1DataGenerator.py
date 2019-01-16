@@ -30,14 +30,14 @@ givenY = np.arange(-110, 120, 20)
 x = np.int16(givenX*xscale + xsize/2 - 5)
 y = np.int16(givenY*yscale + ysize/2)
 # create all images
-spZero = np.zeros([ysize,xsize,x.size,y.size],dtype=np.float16)
+spZero = np.zeros([ysize,xsize,x.size,y.size],dtype=np.float)
 for j in range(y.size):
   for i in range(np.size(x)):
     print(i,j)
     # adding j tilts one axis
     spZero[:,:,i,j] = cnGauss2d(np.arange(xsize), np.arange(ysize), x[i]+j,
       y[j], width,width)
-    
+np.save("data/align/spZero.npy", spZero)    
 # context imager
 xscale = 20 #pixel/arcsec
 yscale = 20 #pixel/arcsec
@@ -56,10 +56,10 @@ for j in range(y.size):
     # adding j tilts one axis
     ciIm[:,:,i,j] = cnGauss2d(np.arange(xsize), np.arange(ysize), x[i]+j,
       y[j], width,width)
-    
+np.save("data/align/ciIm.npy", ciIm)    
 #%%    
 fig, ax=plt.subplots(num=2)
-ax.imshow(np.float32(ciIm[:,:,8,4]))
+ax.imshow(np.uint16(ciIm[:,:,8,4]))
 
 #%%
 # base configuration for spectrograph in zero order similar to ci by finding center of spot
