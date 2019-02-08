@@ -25,8 +25,8 @@ yscale = 8.3333 #pixel/arcsec
 xsize = 1024
 ysize = 2048
 width = 5.
-givenX = np.arange(-19, 20, 2)
-givenY = np.arange(-110, 120, 20)
+givenX = np.arange(-19, 20, 5)
+givenY = np.arange(-110, 120, 50)
 x = np.int16(givenX*xscale + xsize/2 - 5)
 y = np.int16(givenY*yscale + ysize/2)
 # create all images
@@ -44,8 +44,8 @@ yscale = 20 #pixel/arcsec
 xsize = 2048
 ysize = 2048
 width = 10.
-givenX = np.arange(-45, 45, 5)
-givenY = np.arange(-45, 45, 10)
+givenX = np.arange(-45, 45, 10)
+givenY = np.arange(-45, 45, 20)
 x = np.int16(givenX*xscale + xsize/2 - 5)
 y = np.int16(givenY*yscale + ysize/2)
 # create all images
@@ -56,10 +56,12 @@ for j in range(y.size):
     # adding j tilts one axis
     ciIm[:,:,i,j] = cnGauss2d(np.arange(xsize), np.arange(ysize), x[i]+j,
       y[j], width,width)
-np.save("data/align/ciIm.npy", ciIm)    
-#%%    
+np.save("data/align/ciIm.npy", ciIm)  
+ 
+#%%  
+im =spZero 
 fig, ax=plt.subplots(num=2)
-ax.imshow(np.uint16(ciIm[:,:,8,4]))
+ax.imshow((im[:,:,0,0]))
 
 #%%
 # base configuration for spectrograph in zero order similar to ci by finding center of spot
@@ -67,6 +69,7 @@ ax.imshow(np.uint16(ciIm[:,:,8,4]))
 # givenX = np.arange(-10, 10, 1)+1/3.
 # givenY = np.arange(-80, 80, 10)
 # go through all images and find peak locations
+
 xloc = np.zeros([x.size,y.size])
 yloc = np.zeros([x.size,y.size])
 xCenterPixel = np.zeros(y.size)

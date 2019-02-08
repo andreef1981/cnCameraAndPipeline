@@ -7,7 +7,7 @@ Created on Mon Aug 27 09:45:58 2018
 
 Revision history
 ----------------
-
+  07 Feb 2019: - replace large gains by 0 like in calGain3.py
     
 """
 import numpy as np
@@ -182,6 +182,8 @@ def calGain1(data,
   ################# 5. make the gain table ####################################
   temp = np.mean(backgroundSubtracted,axis=0)
   gainTable = np.mean(temp[-1,:,:])/temp[-1,:,:]
+  #TODO: fix for some very large gains... should be taken care by bad pixels?
+  gainTable = np.where(np.abs(gainTable) > 50, 0, gainTable)
   
   if debug:
     try:

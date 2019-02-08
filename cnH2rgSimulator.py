@@ -42,7 +42,8 @@ class cnH2rgRamp():
                addInstrumentDarkNoise=False,addThermalDark=False, addThermalDarkNoise=False,
                addFlatQuadraticSignal=False,quadraticCoeff=[2.,1.,0], addFlatQuadraticNoise=False,
                gainVariation=None, 
-               spectrum=None, spectrumType=None, spatialProfile=None,fileFormat=None):
+               spectrum=None, spectrumType=None, spatialProfile=None,
+               alignPattern=None, fileFormat=None):
 #  def __init__(self, mode, frameRate, integrationTime, biasChannelDifference,
 #               biasChannelVariations, channelReadNoise, channelReadNoiseVariation,
 #               gainVariation, deadPixels, negPixels, darkCurrent, ):
@@ -76,12 +77,23 @@ class cnH2rgRamp():
     readNoiseFrame = np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))*self.readNoise
     
     for j in range(self.nrSequences):
-      if spectrumType is "modulated":
-        spectrum = np.tile(self.spectrum[j,:],(2048,1))
-      elif spectrumType is "defocused":
-        spectrum = np.tile(self.spectrum[j,:],(2048,1))
-      else:
-        spectrum = np.tile(np.concatenate((self.spectrum,self.spectrum)),(2048,1))
+      if spectrum is not None:
+        if spectrumType is "modulated":
+          spectrumPrep = np.tile(self.spectrum[j,:],(2048,1))
+        elif spectrumType is "defocused":
+          spectrumPrep = np.tile(self.spectrum[j,:],(2048,1))
+        else:
+          spectrumPrep = np.tile(np.concatenate((self.spectrum,self.spectrum)),(2048,1))
+      if alignPattern is not None:
+        # reform into 3D cube
+        aSize = alignPattern.shape
+        # 'F' to change first index fastest
+        alignPatternPrep = np.reshape(alignPattern,[aSize[0],aSize[1],aSize[2]*aSize[3]], order='F')
+        if aSize[1] < 2048:
+          # sp data needs tiling
+          alignPatternPrep = np.concatenate((alignPatternPrep[:,:,j],alignPatternPrep[:,:,j]),axis=1)
+        else:
+          alignPatternPrep = alignPatternPrep[:,:,j]
       for i in range(self.ndr):
         print(i)
         if addReadnoise:
@@ -151,10 +163,13 @@ class cnH2rgRamp():
 #            if len(spectrum.shape) > 2:
 #              flatSignal.frame = flatSignal.frame * spectrum[j,:,:]
 #            else:
-            flatSignal.frame = flatSignal.frame * spectrum
+            flatSignal.frame = flatSignal.frame * spectrumPrep
           # TODO: Add slit rotation
           # TODO: Add slit curvature
           # TODO: Add pinhole spectra
+          
+          if alignPattern is not None:
+            flatSignal.frame = flatSignal.frame * alignPatternPrep
           
           if spatialProfile is not None:
             flatSignal.frame = flatSignal.frame * spatialProfile
@@ -225,8 +240,7 @@ for ii in range(len(allY)):
 imPinhole = np.tile(profilePinhole, (2048,1)).T  
 imSinglePinhole = np.tile(cnGauss(y,1.,1024,10/2.35,0), (2048,1)).T
 mode = "slow"
-ndr = 5
-nrSequences = 9
+
 arrayTemperature = 130. 
 biasLevelOffsetScaling =  0. # realistic value is 0.001
 # bias, readnoise values given in ADU
@@ -238,6 +252,13 @@ elif mode is "fast":
   readNoise = 20. # 80e-
 
 
+heSpectrum = fits.open("data/spectra/he_spectrum_combined-32bitfloat.fits")[0].data.astype(np.float32)
+gainVariation = fits.open("data/gain/2048row_gainVariation.fits")[0].data.astype(np.float32)
+siSpectrum = np.load("data/spectra/modulated-8-SiIX.npy")
+siSpectrumDefocused = np.load("data/spectra/defocused-9-SiIX.npy")
+tharSpectrum = np.load("data/spectra/SiIX-ThAr-spectrum.npy")
+spAlignPattern = np.load("data/align/spZero.npy")
+ciAlignPattern = np.load("data/align/ciIm.npy")
 
 frameTime = np.load("frameTime.npy")
 print(frameTime)
@@ -248,16 +269,59 @@ frameDelay = 0.
 #sequenceName = "/flatSignal/simFlatSignal"
 #sequenceName = "/gain/simGainVariation"
 #sequenceName = "/spectra/simSpectrum"
-#sequenceName = "/coronalObs-sensitivity/ciBackgroundDark"
+
+# ########## ci dark
+# ndr = 4
+# nrSequences = 3
+# sequenceName = "/coronalObs-sensitivity/ciBackgroundDark"
+# a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
+#               arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
+#               addInstrumentDark=True,addInstrumentDarkNoise=False,
+#               addThermalDark=True, addThermalDarkNoise=False,
+#               addFlatQuadraticSignal=None,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
+#               gainVariation=None,
+#               spectrum=None, spectrumType=None,
+#               spatialProfile=None, alignPattern=None,fileFormat='both') 
+
+########## ci align dark
+# ndr = 5
+# nrSequences = 3
+# sequenceName = "/coronalObs-sensitivity/ciAlign1-backgroundDark"
+# a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
+#               arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
+#               addInstrumentDark=True,addInstrumentDarkNoise=False,
+#               addThermalDark=True, addThermalDarkNoise=False,
+#               addFlatQuadraticSignal=None,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
+#               gainVariation=None,
+#               spectrum=None, spectrumType=None,
+#               spatialProfile=None, alignPattern=None,fileFormat='both') 
+ 
 # sequenceName = "/coronalObs-sensitivity/spBackgroundDark"
 #sequenceName = "/coronalObs-sensitivity/spGain3"
-#sequenceName = "/coronalObs-sensitivity/ciGain1"
+
+############ ci gain1
+sequenceName = "/coronalObs-sensitivity/ciGain1"
+ndr = 4
+nrSequences = 5
+a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
+              arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
+              addInstrumentDark=True,addInstrumentDarkNoise=False,
+              addThermalDark=True, addThermalDarkNoise=False,
+              addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
+              gainVariation=gainVariation,
+              spectrum=None, spectrumType=None,
+              spatialProfile=None, alignPattern=None,fileFormat='both') 
+
+
+
 #sequenceName = "/coronalObs-sensitivity/spObserve"
 #sequenceName = "/coronalObs-sensitivity/ciObserve"
 # sequenceName = "/coronalObs-sensitivity/spWavecal175um"
 # sequenceName = "/coronalObs-sensitivity/spFocus1-175um"
 # sequenceName = "/coronalObs-sensitivity/spFocus-background"
-sequenceName = "/coronalObs-sensitivity/spFocus2-GOSpinhole"
+# sequenceName = "/coronalObs-sensitivity/spFocus2-GOSpinhole"
+# sequenceName = "/coronalObs-sensitivity/spAlign1"
+# sequenceName = "/coronalObs-sensitivity/ciAlign1"
 #sequenceName = "/generic/observe"
 
 # sequenceName = "/test/test"
@@ -268,21 +332,20 @@ sequenceName = "/coronalObs-sensitivity/spFocus2-GOSpinhole"
 #hdu = fits.PrimaryHDU(varVector)
 #hdu.writeto('data/gain/2048row_gainVariation.fits',overwrite=True)
 
-heSpectrum = fits.open("data/spectra/he_spectrum_combined-32bitfloat.fits")[0].data.astype(np.float32)
-gainVariation = fits.open("data/gain/2048row_gainVariation.fits")[0].data.astype(np.float32)
-siSpectrum = np.load("data/spectra/modulated-8-SiIX.npy")
-siSpectrumDefocused = np.load("data/spectra/defocused-9-SiIX.npy")
-tharSpectrum = np.load("data/spectra/SiIX-ThAr-spectrum.npy")
+
+# the pattern form is 'raster'
+# nrSequences = spAlignPattern.shape[2]*spAlignPattern.shape[3]
+# nrSequences = ciAlignPattern.shape[2]*ciAlignPattern.shape[3]
 #plt.imshow(siSpectrum)
 #TODO: instrument dark noise has issue with non matching array sizes
-a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
-             arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
-             addInstrumentDark=True,addInstrumentDarkNoise=False,
-             addThermalDark=True, addThermalDarkNoise=False,
-             addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
-             gainVariation=gainVariation,
-             spectrum=siSpectrumDefocused, spectrumType="defocused",
-             spatialProfile=imSinglePinhole,fileFormat='both')    
+# a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
+#               arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
+#               addInstrumentDark=True,addInstrumentDarkNoise=False,
+#               addThermalDark=True, addThermalDarkNoise=False,
+#               addFlatQuadraticSignal=None,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
+#               gainVariation=None,
+#               spectrum=None, spectrumType=None,
+#               spatialProfile=None, alignPattern=None,fileFormat='both')    
 
 # Generic data set
 #a=cnH2rgRamp(mode, ndr, frameTime/1e9, frameDelay/1e9, biasLevel, biasLevelOffsetScaling, readNoise,
