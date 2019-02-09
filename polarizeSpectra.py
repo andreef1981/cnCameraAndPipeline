@@ -167,18 +167,18 @@ ax4.plot(siVector, recov3[3,:])
 #
 
 #%%
-allObs = np.concatenate((obs,obs2),axis=1)
-np.save("data/spectra/modulated-8-SiIX.npy", allObs)
-np.save("data/spectra/demod-left-8-SiIX.npy", demod)
-np.save("data/spectra/demod-right-8-SiIX.npy", demod2)
-np.save("data/spectra/demod-sum-8-SiIX.npy", demod3)
-np.save("data/spectra/demod-diff-8-SiIX.npy", demod4)
-np.save("data/spectra/SiIXwavelength.npy", np.concatenate((siVector,siVector)))
+# allObs = np.concatenate((obs,obs2),axis=1)
+# np.save("data/spectra/modulated-8-SiIX.npy", allObs)
+# np.save("data/spectra/demod-left-8-SiIX.npy", demod)
+# np.save("data/spectra/demod-right-8-SiIX.npy", demod2)
+# np.save("data/spectra/demod-sum-8-SiIX.npy", demod3)
+# np.save("data/spectra/demod-diff-8-SiIX.npy", demod4)
+# np.save("data/spectra/SiIXwavelength.npy", np.concatenate((siVector,siVector)))
 
-for i in range(allObs.shape[0]):
-  fig, (ax1) = plt.subplots(1,1)
-  ax1.plot(allObs[i,:])
-plt.show()
+# for i in range(allObs.shape[0]):
+#   fig, (ax1) = plt.subplots(1,1)
+#   ax1.plot(allObs[i,:])
+# plt.show()
 
 ##%%
 #sub=1

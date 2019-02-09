@@ -43,7 +43,8 @@ class cnH2rgRamp():
                addFlatQuadraticSignal=False,quadraticCoeff=[2.,1.,0], addFlatQuadraticNoise=False,
                gainVariation=None, 
                spectrum=None, spectrumType=None, spatialProfile=None,
-               alignPattern=None, fileFormat=None):
+               alignPattern=None, 
+               contextImage = None, fileFormat=None):
 #  def __init__(self, mode, frameRate, integrationTime, biasChannelDifference,
 #               biasChannelVariations, channelReadNoise, channelReadNoiseVariation,
 #               gainVariation, deadPixels, negPixels, darkCurrent, ):
@@ -84,6 +85,8 @@ class cnH2rgRamp():
           spectrumPrep = np.tile(self.spectrum[j,:],(2048,1))
         else:
           spectrumPrep = np.tile(np.concatenate((self.spectrum,self.spectrum)),(2048,1))
+      if contextImage is not None:
+        conIm = contextImage[j,:,:]
       if alignPattern is not None:
         # reform into 3D cube
         aSize = alignPattern.shape
@@ -173,7 +176,10 @@ class cnH2rgRamp():
           
           if spatialProfile is not None:
             flatSignal.frame = flatSignal.frame * spatialProfile
-          
+            
+          if contextImage is not None:
+            flatSignal.frame = np.multiply(flatSignal.frame,conIm)
+            
           if addFlatQuadraticNoise:
             # use normal distribution to simulate dark noise
             flatSignalNoiseFrame = np.sqrt(flatSignal.frame)*np.random.standard_normal(size=(emptyFrame.xDim,emptyFrame.yDim))
@@ -259,7 +265,7 @@ siSpectrumDefocused = np.load("data/spectra/defocused-9-SiIX.npy")
 tharSpectrum = np.load("data/spectra/SiIX-ThAr-spectrum.npy")
 spAlignPattern = np.load("data/align/spZero.npy")
 ciAlignPattern = np.load("data/align/ciIm.npy")
-
+ciModulated = np.load("data/spectra/modulated-8-9pos-contextImager.npy")
 frameTime = np.load("frameTime.npy")
 print(frameTime)
 frameTime = 0.5
@@ -299,10 +305,23 @@ frameDelay = 0.
 # sequenceName = "/coronalObs-sensitivity/spBackgroundDark"
 #sequenceName = "/coronalObs-sensitivity/spGain3"
 
+# ############ ci gain1
+# sequenceName = "/coronalObs-sensitivity/ciGain1"
+# ndr = 4
+# nrSequences = 5
+# a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
+#               arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
+#               addInstrumentDark=True,addInstrumentDarkNoise=False,
+#               addThermalDark=True, addThermalDarkNoise=False,
+#               addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
+#               gainVariation=gainVariation,
+#               spectrum=None, spectrumType=None,
+#               spatialProfile=None, alignPattern=None,fileFormat='both') 
+
 ############ ci gain1
-sequenceName = "/coronalObs-sensitivity/ciGain1"
+sequenceName = "/coronalObs-sensitivity/ciObserve"
 ndr = 4
-nrSequences = 5
+nrSequences = 72
 a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling, readNoise,
               arrayTemperature, sequenceName, nrSequences, addChannelBiases=True, addReadnoise=True, 
               addInstrumentDark=True,addInstrumentDarkNoise=False,
@@ -310,8 +329,8 @@ a=cnH2rgRamp(mode, ndr, frameTime, frameDelay, biasLevel, biasLevelOffsetScaling
               addFlatQuadraticSignal=True,quadraticCoeff=[1000,5000.,0], addFlatQuadraticNoise=False,
               gainVariation=gainVariation,
               spectrum=None, spectrumType=None,
-              spatialProfile=None, alignPattern=None,fileFormat='both') 
-
+              spatialProfile=None, alignPattern=None,
+              contextImage=ciModulated, fileFormat='both') 
 
 
 #sequenceName = "/coronalObs-sensitivity/spObserve"

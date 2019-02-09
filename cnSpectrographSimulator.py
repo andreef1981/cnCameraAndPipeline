@@ -174,7 +174,7 @@ slit_height = 81.           # slit height in mm (42 or 81)
 # select wavelength
 # lam = 3.9343
 chosenOrder = 48
-lam = 1.07725
+lam = 3.934
 # blaze order is an integer
 bl_order, eff = blaze_order (lam, n, grating_blaze,blaze_function=True,theta=littrow)
 
@@ -199,8 +199,8 @@ print(dlinC,dlinC*18)
 print('range on array', dlin*pixel_size*spectral_pixels, ' nm')
 print('range on array with custom order', dlinC*pixel_size*spectral_pixels, ' nm')
 
-vec = (np.arange(1024)-512)*dlinC*18.+lam*1000.
-np.save("siWavelength.npy",vec)
+# vec = (np.arange(1024)-512)*dlin*18.+lam*1000.
+# np.save("siWavelength.npy",vec)
 
 
 
