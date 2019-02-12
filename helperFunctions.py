@@ -252,7 +252,7 @@ def cnFind2DSpatialPeak(im,
                          prominenceLimits,
                          heightLimits,
                          invert=False):
-  
+  # TODO: is identical to 1D version exept the myAxis distinction before find_peaks
   # try to estimate a maximum height from the data
   #TODO: use bad pixel mask to refine this
   if invert:
@@ -299,9 +299,11 @@ def cnFindSpectralPeaks(im,
     #special treatment if there is only one spatial profile
     if np.size(spatialPeaks) == 1:
       result = []
-      a= xLoc[0]
-      b=xLoc[1]
-      c = im[spatialPeaks-spatialWidths:spatialPeaks+spatialWidths-1,xLoc[0]:xLoc[1]]
+      # a= xLoc[0]
+      # b=xLoc[1]
+      spatialPeaks = spatialPeaks[0]
+      spatialWidths = spatialWidths[0]
+      # c = im[spatialPeaks-spatialWidths:spatialPeaks+spatialWidths-1,xLoc[0]:xLoc[1]]
       profile = np.median(im[spatialPeaks-spatialWidths:spatialPeaks+spatialWidths-1,xLoc[0]:xLoc[1]],axis=0)
       
       peaks = find_peaks(profile,width=peakWidth,
@@ -358,17 +360,28 @@ def cnNonLinearityCorrection(data,
                              mode,
                              linThreshold,
                              multiRamp=False):  
+  """
+  Revision history
+  ------------------
+   11 Feb 2019:
+     - changing fast mode to return same amount of NDRs as input
+  """
   if multiRamp:
     # in this case we use the NDR number as our 'time' axis
     dataTime = np.arange(data.shape[1])
     
-    if mode is not "SLOW":
-      # fast mode does not use the first frame
+    linearityCorrected = np.zeros(data.shape,dtype=np.float32)
+    
+    if mode == "FAST":
+      # fast mode does not use the first frame for fit
       data = data[:,1:,:,:]
       # time vector is shorter but must maintain the values
+      orgDataTime = dataTime
       dataTime = dataTime[1:]
+    else:
+      orgDataTime = dataTime
     
-    linearityCorrected = np.zeros(data.shape,dtype=np.float32)
+    
     # need to loop to use cnPolyfit
     
     # Check for order of correction
@@ -384,9 +397,9 @@ def cnNonLinearityCorrection(data,
       coef = cnPolyfit(np.squeeze(data[i,:,:,:]), order, mode, linThreshold)
       
       if order == 2:
-        linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],dataTime[:,None,None])
+        linearityCorrected[i,:,:,:] = np.multiply(coef[1,:,:],orgDataTime[:,None,None])
       else:
-        linearityCorrected[i,:,:,:] = np.multiply(coef[0,:,:],dataTime[:,None,None])
+        linearityCorrected[i,:,:,:] = np.multiply(coef[0,:,:],orgDataTime[:,None,None])
   else:
     # in this case we use the NDR number as our 'time' axis
     dataTime = np.arange(data.shape[0])
@@ -395,7 +408,10 @@ def cnNonLinearityCorrection(data,
       # fast mode does not use the first frame
       data = data[1:,:,:]
       # time vector is shorter but must maintain the values
+      orgDataTime = dataTime
       dataTime = dataTime[1:]
+    else:
+      orgDataTime = dataTime
     
     # Check for order of correction
     if len(dataTime) == 2:
@@ -408,9 +424,9 @@ def cnNonLinearityCorrection(data,
     # Do quadratic fit, use data up to threshold
     coef = cnPolyfit(data, order, mode, linThreshold)
     if order == 2:
-      linearityCorrected = np.multiply(coef[1,:,:],dataTime[:,None,None])
+      linearityCorrected = np.multiply(coef[1,:,:],orgDataTime[:,None,None])
     else:
-      linearityCorrected = np.multiply(coef[0,:,:],dataTime[:,None,None])
+      linearityCorrected = np.multiply(coef[0,:,:],orgDataTime[:,None,None])
       
   return linearityCorrected
   
@@ -437,6 +453,8 @@ def cnPolyfit(ramp, order, mode, threshold):
 
   # define x vector for fit
   x = np.arange(ramp.shape[0])
+  if mode == "FAST":
+    x = x+1
   
   # reshape the data
   y = ramp.reshape(ramp.shape[0],ramp.shape[1]*ramp.shape[2])

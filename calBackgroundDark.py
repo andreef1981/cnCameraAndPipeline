@@ -103,7 +103,7 @@ def calBackgroundDark(data,
   ################# 2. reference pixel correction #############################
    #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
   # needed for slow mode only?
-  if mode is "SLOW":
+  if mode == "SLOW":
     #do something
     data = data
     
@@ -184,40 +184,97 @@ def calBackgroundDark(data,
   return averagedDark
 
 
-
-# b=cnH2rgRamps("data/coronalObs-sensitivity/ciBackgroundDark.",
-#               "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-#               ramps=3, ndr=4)
+##### sp fast 5
+# mode = "FAST"
+# linThreshold = 66000  
+# b=cnH2rgRamps("data/calibrations/spFast5-backgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=5)
 # data=b.read("fits",dtype=np.uint16)
-# linThreshold = 0
+
+# c= calBackgroundDark(data,
+#                      linThreshold,
+#                      mode,
+#                      debug=True,
+#                      logPath=None,
+#                      writeToFile=True,
+#                      filePath='data/calibrations/',
+#                      sequenceName='spFast5-masterBackgroundDark',
+#                      fileFormat="both")
+  
+# #### sp slow 2
 # mode = "SLOW"
+# linThreshold = 0  
+# b=cnH2rgRamps("data/calibrations/spSlow2-backgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=2)
+# data=b.read("fits",dtype=np.uint16)
+
 # c= calBackgroundDark(data,
 #                       linThreshold,
 #                       mode,
 #                       debug=True,
 #                       logPath=None,
 #                       writeToFile=True,
-#                       filePath='data/coronalObs-sensitivity/',
-#                       sequenceName='ciMasterBackgroundDark',
+#                       filePath='data/calibrations/',
+#                       sequenceName='spSlow2-masterBackgroundDark',
 #                       fileFormat="both")
   
-b=cnH2rgRamps("data/coronalObs-sensitivity/ciAlign1-backgroundDark",
-              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-              ramps=3, ndr=5)
-data=b.read("fits",dtype=np.uint16)
-linThreshold = 0
-mode = "SLOW"
-c= calBackgroundDark(data,
-                      linThreshold,
-                      mode,
-                      debug=True,
-                      logPath=None,
-                      writeToFile=True,
-                      filePath='data/coronalObs-sensitivity/',
-                      sequenceName='ciAlign1-masterBackground',
-                      fileFormat="both")
+# ##### ci fast 5
+# mode = "FAST"
+# linThreshold = 66000  
+# b=cnH2rgRamps("data/calibrations/ciFast5-backgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=5)
+# data=b.read("fits",dtype=np.uint16)
+
+# c= calBackgroundDark(data,
+#                      linThreshold,
+#                      mode,
+#                      debug=True,
+#                      logPath=None,
+#                      writeToFile=True,
+#                      filePath='data/calibrations/',
+#                      sequenceName='ciFast5-masterBackgroundDark',
+#                      fileFormat="both")
+  
+# ##### ci fast 3
+# mode = "FAST"
+# linThreshold = 66000  
+# b=cnH2rgRamps("data/calibrations/ciFast3-backgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=3)
+# data=b.read("fits",dtype=np.uint16)
+
+# c= calBackgroundDark(data,
+#                      linThreshold,
+#                      mode,
+#                      debug=True,
+#                      logPath=None,
+#                      writeToFile=True,
+#                      filePath='data/calibrations/',
+#                      sequenceName='ciFast3-masterBackgroundDark',
+#                      fileFormat="both")
+  
+# ##### ci slow 4
+# mode = "SLOW"
+# linThreshold = 0  
+# b=cnH2rgRamps("data/calibrations/ciSlow4-backgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=4)
+# data=b.read("fits",dtype=np.uint16)
+
+# c= calBackgroundDark(data,
+#                       linThreshold,
+#                       mode,
+#                       debug=True,
+#                       logPath=None,
+#                       writeToFile=True,
+#                       filePath='data/calibrations/',
+#                       sequenceName='ciSlow4-masterBackgroundDark',
+#                       fileFormat="both")
 
 #%%
-print(np.min(c),np.max(c))
-fig, ax=plt.subplots()
-ax.imshow(c[3])
+# print(np.min(c),np.max(c))
+# fig, ax=plt.subplots()
+# ax.imshow(c[3])

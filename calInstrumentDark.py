@@ -90,7 +90,7 @@ def calInstrumentDark(data,
   ################# 2. reference pixel correction #############################
    #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
   # needed for slow mode only?
-  if mode is "SLOW":
+  if mode == "SLOW":
     #do something
     data = data
     
@@ -138,8 +138,41 @@ def calInstrumentDark(data,
   
   return averagedDark
 
-#
-#a=cnH2rgRamps("data/instrumentDark/simInstrumentDark*",readMode="SLOW",subArray=None,verbose=True)
-#data=a.read()
-#b= calInstrumentDark(data, writeToFile=True, path='data/instrumentDark/',
-#                        sequenceName='masterInstrumentDark', fileFormat='arr')
+# ##### sp fast 5
+# mode = "FAST"
+# linThreshold = 66000  
+# b=cnH2rgRamps("data/calibrations/spFast5-instrumentDark",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=5)
+# data=b.read("fits",dtype=np.uint16)
+
+# c= calInstrumentDark(data,
+#                      linThreshold,
+#                      mode,
+#                      debug=True,
+#                      logPath=None,
+#                      writeToFile=False,
+#                      filePath=None,
+#                      sequenceName=None,
+#                      fileFormat="both")
+# ##### ci fast 5
+# mode = "FAST"
+# linThreshold = 66000  
+# b=cnH2rgRamps("data/calibrations/ciFast5-instrumentDark",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=5)
+# data=b.read("fits",dtype=np.uint16)
+
+# c= calInstrumentDark(data,
+#                      linThreshold,
+#                      mode,
+#                      debug=True,
+#                      logPath=None,
+#                      writeToFile=False,
+#                      filePath=None,
+#                      sequenceName=None,
+#                      fileFormat="both")
+#%%
+# print(np.min(c),np.max(c))
+# fig, ax=plt.subplots()
+# ax.imshow(c[3])

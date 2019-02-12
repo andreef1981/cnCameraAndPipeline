@@ -19,37 +19,39 @@ def cnGauss2d(x,y,x0,y0,sx,sy):
 
 myx = np.arange(-10, 10, 0.0001)
 
-# spectrograph 0 order
-xscale = 8.3333 #pixel/arcsec
-yscale = 8.3333 #pixel/arcsec
-xsize = 1024
-ysize = 2048
-width = 5.
-givenX = np.arange(-19, 20, 5)
-givenY = np.arange(-110, 120, 50)
-x = np.int16(givenX*xscale + xsize/2 - 5)
-y = np.int16(givenY*yscale + ysize/2)
-# create all images
-spZero = np.zeros([ysize,xsize,x.size,y.size],dtype=np.float)
-for j in range(y.size):
-  for i in range(np.size(x)):
-    print(i,j)
-    # adding j tilts one axis
-    spZero[:,:,i,j] = cnGauss2d(np.arange(xsize), np.arange(ysize), x[i]+j,
-      y[j], width,width)
-np.save("data/align/spZero.npy", spZero)    
+# # spectrograph 0 order
+# xscale = 8.3333 #pixel/arcsec
+# yscale = 8.3333 #pixel/arcsec
+# xsize = 1024
+# ysize = 2048
+# width = 5.
+# givenX = np.arange(-19, 20, 4)
+# givenY = np.arange(-110, 120, 45)
+# x = np.int16(givenX*xscale + xsize/2 - 5)
+# y = np.int16(givenY*yscale + ysize/2)
+# # create all images
+# spZero = np.zeros([ysize,xsize,x.size,y.size],dtype=np.float)
+# for j in range(y.size):
+#   for i in range(np.size(x)):
+#     print(i,j)
+#     # adding j tilts one axis
+#     spZero[:,:,i,j] = cnGauss2d(np.arange(xsize), np.arange(ysize), x[i]+j,
+#       y[j], width,width)
+# np.save("data/align/spZero.npy", spZero)    
 # context imager
 xscale = 20 #pixel/arcsec
 yscale = 20 #pixel/arcsec
 xsize = 2048
 ysize = 2048
 width = 10.
-givenX = np.arange(-45, 45, 10)
+givenX = np.arange(-45, 45, 9)
 givenY = np.arange(-45, 45, 20)
+#otherwise in zeroband in center
+givenX[5]=givenX[5]+3
 x = np.int16(givenX*xscale + xsize/2 - 5)
 y = np.int16(givenY*yscale + ysize/2)
 # create all images
-ciIm = np.zeros([ysize,xsize,x.size,y.size],dtype=np.float16)
+ciIm = np.zeros([ysize,xsize,x.size,y.size],dtype=np.float)
 for j in range(y.size):
   for i in range(np.size(x)):
     print(i,j)
@@ -59,7 +61,7 @@ for j in range(y.size):
 np.save("data/align/ciIm.npy", ciIm)  
  
 #%%  
-im =spZero 
+im =ciIm 
 fig, ax=plt.subplots(num=2)
 ax.imshow((im[:,:,0,0]))
 

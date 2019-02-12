@@ -13,16 +13,19 @@ from ddLinearity import *
 
 def calGain4(data,
              gratingPosition,
-             dark,
+             backgroundDark,
              badPixels,
              oldGain,
              threshold=None,
              simulateChange=False,
              mode=None,
+             debug=False,
+             logPath=None,
              writeToFile=False,
-             path=None,
+             filePath=None,
              sequenceName=None,
              fileFormat='fits'):
+
   
   #TODO: are the stage positions in user or raw units
   #      (float32/uint64 for positions)
@@ -84,30 +87,107 @@ def calGain4(data,
 
     >>> 
    """
+  if not logPath is None:
+#    file = open(logPath+"ddOne_"+datetime.now().strftime("%Y-%m-%d_%H:%M:%S")+".log", 'w')
+    file = open(logPath+"calGain4.log", 'w')
+ 
+  ################# 1. make some checks and conversions #######################
   
   
-  #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
+  # turn into float for what is to come
+  data = np.float32(data)
   
-  # First perform linearity correction
+  ################# 2. reference pixel correction #############################
+   #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
+  # needed for slow mode only?
+  if mode == "SLOW":
+    #do something
+    data = data
+    
+  if debug:
+    try:
+      file.write("camera mode is "+mode+"\n")
+    except:
+      print("camera mode is "+mode+"\n")
+    
   
-  # Second subtract linearized background
+  ################# 3. make the linearity correction ##########################  
+  if len(data.shape)==4:
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=True)
+  else:
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=False)
   
-  # Third perform flat fielding
+    
+  ################# 4. subtract the background ################################  
+  backgroundSubtracted = linearityCorrected-backgroundDark
   
-  # Fourth ignore/interpolate bad pixels
+  ################# 5. make gain table         ################################
+  # simple median for now
+  temp = np.median(backgroundSubtracted,axis=0)
+  # mitigate divide by 0 issue
+  gainTable = (temp[-1,:,:]/np.median(temp[-1,:,:]))
+  # mitigate divide by 0 issue
+  gainTable[gainTable==0] = 1e-15
+  gainTable = 1/gainTable
   
-  # Fifth loop through sequences to find spatial and spectral focuses
-  # TODO: helper function to perform dither gain calibration
-  # TODO: remapping the beams would greatly help with detection of edges an fitting
+  #TODO: fix for some very large gains... should be taken care by bad pixels?
+  gainTable = np.where(np.abs(gainTable) > 10, 0, gainTable)
   
-  # Sixth determine if focus has changed
-  # TODO: what is the threshold for a change
+  if debug:
+    try:
+      file.write("mean is "+str(np.mean((newGain)))+"\n")
+      file.write("std is "+str(np.std((newGain)))+"\n")
+    except:
+      print("mean is "+str(np.mean((newGain))))
+      print("std is "+str(np.std(newGain)))
   
   if simulateChange:
     newGain = oldGain*1.1 # simulate change by 10%
     changeFlag = True
   else:
-    newGain = oldGain
+    newGain = gainTable
     changeFlag = False
   
+  #TODO: Don't know how to compare yet for change. Set change flat always True
+  changeFlag = True
+  
   return newGain, changeFlag
+
+# ### reading the data
+# ## cssStyle needs ramps and ndr information
+# linThreshold = 66000
+# mode = "FAST"
+# a=cnH2rgRamps("data/calibrations/spFast5-masterBackgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=5)
+# backgroundDark = np.squeeze(a.read("fits",dtype=np.uint16))
+
+# b=cnH2rgRamps("data/calibrations/spGain4",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=10, ndr=5)
+# data=b.read("fits",dtype=np.uint16)
+
+
+
+# gratingPosition = np.arange(10)
+# badPixels = np.zeros((2048,2048),dtype="uint8")
+# oldGain = np.ones((2048,2048),dtype="float32")
+
+# c,flag= calGain4(data,
+#                  gratingPosition,
+#                  backgroundDark,
+#                  badPixels,
+#                  oldGain,
+#                  threshold=None,
+#                  simulateChange=False,
+#                  mode=None,
+#                  debug=False,
+#                  logPath=None,
+#                  writeToFile=False,
+#                  filePath=None,
+#                  sequenceName=None,
+#                  fileFormat='fits')
+  
+# fig, ax=plt.subplots()
+# plt.imshow(c,vmin=0.9, vmax=1.1)
+# plt.show()

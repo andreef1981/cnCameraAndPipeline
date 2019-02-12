@@ -7,7 +7,8 @@ Created on Mon Aug 27 09:45:58 2018
 
 Revision history
 ----------------
-
+  11 Februar 2019:
+    - added distinction between SP and CI camera
     
 """
 import numpy as np
@@ -109,15 +110,13 @@ def calFocus2(data,
     # file = open(logPath+"wavecal.log", 'w')
  
   ################# 1. make some checks and conversions #######################
-  
-  
   # turn into float for what is to come
   data = np.float32(data)
   
   ################# 2. reference pixel correction #############################
    #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
   # needed for slow mode only?
-  if mode is "SLOW":
+  if mode == "SLOW":
     #do something
     data = data
     
@@ -158,87 +157,132 @@ def calFocus2(data,
   # if len(data.shape)==4:
   #   gainCorrected = np.average(gainCorrected, axis=0)
   # for slow mode signal is inverted
-  if mode is "SLOW":
+  if mode == "SLOW":
     result = gainCorrected[:,0,:,:] - gainCorrected[:,-1,:,:]
   else:
     result = gainCorrected[:,-1,:,:] - gainCorrected[:,0,:,:]
   ################# 6.beam mapping ############################################
   
   #TODO: beam mapping
-  
-  ################# 7. find spatial & spectral profiles #######################
-  #TODO: pinhole mask implementation
-  #TODO: spatial focus metric
-  if debug:
-    fig, ax=plt.subplots(num=5)
-    im=plt.imshow(result[4])#, norm=LogNorm(vmin=100, vmax=10000))
-    fig.colorbar(im)
-    plt.show()
-    
-  
-  # find the spatial peaks
-  spatialPeaksLeft = []
-  spatialWidthsLeft = []
-  for i in range(result.shape[0]):
-    ind, widths, prominences, heights, profile = cnFindSpatialPeaks(result[i,:,:],
-                                                                    [3,50],
-                                                                    [10,980],
-                                                                    None,
-                                                                    [100, 20000],
-                                                                    [0,20000],
-                                                                    invert=False)
-                                                                    # [100, 0.9*np.max(-1*result[i,:1024,:])-np.mean(-1*result[i,:1024,:])],
-                                                                    # [np.mean(-1*result[i,:1024,:]),0],
-                                                                    # invert=True)
-    
-    # There should be only one peak from GOS pinhole
+  if camera == "SP":
+    ################# 7. find spatial & spectral profiles #######################
+    #TODO: pinhole mask implementation
+    #TODO: spatial focus metric
     if debug:
-      print(ind, 'widths')
-      print(widths, 'widths')
-    spatialPeaksLeft.append(int(ind))
-    spatialWidthsLeft.append(int(widths))
-  spatialPeaksRight = spatialPeaksLeft
-  spatialWidthsRight = spatialWidthsLeft
-  
-  avLeft = np.zeros(result.shape[0],dtype=np.float16())
-  avRight = np.zeros(result.shape[0],dtype=np.float16())
-  
-  for i in range(result.shape[0]):
+      fig, ax=plt.subplots(num=5)
+      im=plt.imshow(result[4])#, norm=LogNorm(vmin=100, vmax=10000))
+      fig.colorbar(im)
+      plt.show()
+      
+    
+    # find the spatial peaks
+    spatialPeaksLeft = []
+    spatialWidthsLeft = []
+    for i in range(result.shape[0]):
+      ind, widths, prominences, heights, profile = cnFindSpatialPeaks(result[i,:,:],
+                                                                      [3,50],
+                                                                      [10,980],
+                                                                      None,
+                                                                      [100, 20000],
+                                                                      [0,20000],
+                                                                      invert=False)
+                                                                      # [100, 0.9*np.max(-1*result[i,:1024,:])-np.mean(-1*result[i,:1024,:])],
+                                                                      # [np.mean(-1*result[i,:1024,:]),0],
+                                                                      # invert=True)
+      
+      # There should be only one peak from GOS pinhole
+      if debug:
+        print(ind, 'widths')
+        print(widths, 'widths')
+
+      spatialPeaksLeft.append(int(ind))
+      spatialWidthsLeft.append(int(widths))
+    spatialPeaksRight = spatialPeaksLeft
+    spatialWidthsRight = spatialWidthsLeft
+    
+    avLeft = np.zeros(result.shape[0],dtype=np.float16())
+    avRight = np.zeros(result.shape[0],dtype=np.float16())
+    
+    for i in range(result.shape[0]):
+      if debug:
+        print(spatialPeaksLeft[i],spatialWidthsLeft[i],'ind,width')
+      # left side
+      spectralPeaks, leftProfile = cnFindSpectralPeaks(result[i,:,:],
+                                        [2,100],
+                                        [spatialPeaksLeft[i]],
+                                        [spatialWidthsLeft[i]],
+                                        [0,1024],
+                                        [100,20000],
+                                        [-20000,-50],
+                                        invert=True)
+      
+      
+      avLeft[i] = np.mean(spectralPeaks[0][1])
+      # right side
+      spectralPeaks, rightProfile = cnFindSpectralPeaks(result[i,:,:],
+                                        [2,100],
+                                        [spatialPeaksRight[i]],
+                                        [spatialWidthsRight[i]],
+                                        [1024,2048],
+                                        [100,20000],
+                                        [-20000,-50],
+                                        invert=True)
+      avRight[i] = np.mean(spectralPeaks[0][1])
     if debug:
-      print(spatialPeaksLeft[i],spatialWidthsLeft[i],'ind,width')
-    # left side
-    spectralPeaks, leftProfile = cnFindSpectralPeaks(result[i,:,:],
-                                      [2,100],
-                                      spatialPeaksLeft[i],
-                                      spatialWidthsLeft[i],
-                                      [0,1024],
-                                      [100,20000],
-                                      [-20000,-50],
-                                      invert=True)
+      print(avLeft,avRight)
     
+    #TODO: use both sides to determine best focus
+    # fit quadratic function to line width values
+    parLeft = np.polyfit(stagePosition,np.float64(avLeft),2)
+    hr = np.arange(np.min(stagePosition),np.max(stagePosition),0.001)
+    fitterLeft = np.polyval(parLeft,hr)
+    indLeft = np.argmin(fitterLeft)
     
-    avLeft[i] = np.mean(spectralPeaks[0][1])
-    # right side
-    spectralPeaks, rightProfile = cnFindSpectralPeaks(result[i,:,:],
-                                      [2,100],
-                                      spatialPeaksRight[i],
-                                      spatialWidthsRight[i],
-                                      [1024,2048],
-                                      [100,20000],
-                                      [-20000,-50],
-                                      invert=True)
-    avRight[i] = np.mean(spectralPeaks[0][1])
-  if debug:
-    print(avLeft,avRight)
-  
-  #TODO: use both sides to determine best focus
-  # fit quadratic function to line width values
-  parLeft = np.polyfit(stagePosition,np.float64(avLeft),2)
-  hr = np.arange(np.min(stagePosition),np.max(stagePosition),0.001)
-  fitterLeft = np.polyval(parLeft,hr)
-  indLeft = np.argmin(fitterLeft)
-  
-  newFocus = hr[indLeft]  
+    newFocus = hr[indLeft]
+  elif camera == "CI":
+    xwidth = np.zeros([stagePosition.size])
+    ywidth = np.zeros([stagePosition.size])
+    for i in range(len(stagePosition)):
+      
+      im = result[i,:,:]
+      ysize = 2048
+      xsize = 2048
+      # fig, ax=plt.subplots(num=2)
+      # ax.imshow((im))
+      # find peaks along x axis (0)
+      xInd, xWidths, xProminences, xHeights, xProfile = cnFind2DSpatialPeak(im,
+                                                                            0,
+                                                                            [6,100],
+                                                                            [0,ysize-1],
+                                                                            None,
+                                                                            [40.,65000.],
+                                                                            [50,65000.],
+                                                                            invert=False)
+      
+      # find peaks along y axis (1)
+      yInd, yWidths, yProminences, yHeights, yProfile = cnFind2DSpatialPeak(im,
+                                                                            1,
+                                                                            [6,100],
+                                                                            [0,xsize-1],
+                                                                            None,
+                                                                            [40.,65000.],
+                                                                            [50,65000.],
+                                                                            invert=False)
+      # if i==4:
+      #   fig, ax=plt.subplots(num=3)
+      #   ax.plot(yProfile)
+      # raise warning if one is bigger than size==1
+      assert(xInd.size==1),"More than one peak in x direction found"
+      assert(yInd.size==1),"More than one peak in y direction found"
+      xwidth[i] = xWidths
+      ywidth[i] = yWidths
+    parX = np.polyfit(stagePosition,np.float64(xwidth),2)
+    hr = np.arange(np.min(stagePosition),np.max(stagePosition),0.001)
+    fitterX = np.polyval(parX,hr)
+    indX = np.argmin(fitterX)
+    newFocus = hr[indX]
+  else:
+    print("camera has to be SP or CI")
 
     
   if simulateChange:
@@ -263,65 +307,125 @@ def calFocus2(data,
   return newFocus, changeFlag
 
 
-# reading the data
-# cssStyle needs ramps and ndr information
-linThreshold = 0
-mode = "SLOW"
+# # reading the data
+# # cssStyle needs ramps and ndr information
+# linThreshold = 66000
+# mode = "FAST"
 
-a=cnH2rgRamps("data/coronalObs-sensitivity/spFocus2-GOSpinhole",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=9, ndr=5)
-data = np.squeeze(a.read("fits",dtype=np.uint16))
-# reading the background data
-b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-masterBackground",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=1, ndr=5)
+# a=cnH2rgRamps("data/calibrations/spFocus2-GOSpinhole",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=10, ndr=5)
+# data = np.squeeze(a.read("fits",dtype=np.uint16))
+# # reading the background data
+# b=cnH2rgRamps("data/calibrations/spFast5-masterBackgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=5)
 
-backgroundDark=np.squeeze(b.read("fits",dtype=np.float32))
+# backgroundDark=np.squeeze(b.read("fits",dtype=np.float32))
 
-#%%
-gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+# #%%
+# gainTable = in_im = fits.open("data/calibrations/spMasterGain3.000.fits")[0].data.astype(np.float32)
 
-changeThreshold = 0.5
-#exact focus
-oldFocus = -10.193
-#within threshold
-#oldFocus = -9.8
-#outside threshold
-#oldFocus = -9.
-camera = "SP"
-oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
+# changeThreshold = 0.5
+# #exact focus
+# oldFocus = -10.193
+# #within threshold
+# #oldFocus = -9.8
+# #outside threshold
+# #oldFocus = -9.
+# camera = "SP"
 
-badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
+# badPixels = fits.open("data/calibrations/spBadPixels.000.fits")[0].data.astype(np.uint8)
 
-c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=1, ndr=2)
-beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
+# c=cnH2rgRamps("data/calibrations/spBeamMapping",
+#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=2)
+# beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
 
-#%%
-# fig, ax=plt.subplots(num=1)
-# im=plt.imshow(data[0,4])#, norm=LogNorm(vmin=100, vmax=10000))
-# fig.colorbar(im)
-# plt.show()
-#%%
+# #%%
+# # fig, ax=plt.subplots(num=1)
+# # im=plt.imshow(data[0,4])#, norm=LogNorm(vmin=100, vmax=10000))
+# # fig.colorbar(im)
+# # plt.show()
+# #%%
 
-stagePositions = np.array([-9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
+# stagePositions = np.array([-9.2, -9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
 
-newFocus, changeFlag = calFocus2(data,
-                                    stagePositions,
-                                    backgroundDark,
-                                    gainTable,
-                                    badPixels,
-                                    oldFocus,
-                                    mode,
-                                    linThreshold,
-                                    changeThreshold,
-                                    camera,
-                                    debug=True,
-                                    logPath=None,
-                                    simulateChange=False,
-                                    writeToFile=False,
-                                    path=None,
-                                    sequenceName=None,
-                                    fileFormat='fits')
+# newFocus, changeFlag = calFocus2(data,
+#                                     stagePositions,
+#                                     backgroundDark,
+#                                     gainTable,
+#                                     badPixels,
+#                                     oldFocus,
+#                                     mode,
+#                                     linThreshold,
+#                                     changeThreshold,
+#                                     camera,
+#                                     debug=True,
+#                                     logPath=None,
+#                                     simulateChange=False,
+#                                     writeToFile=False,
+#                                     path=None,
+#                                     sequenceName=None,
+#                                     fileFormat='fits')
+  
+
+############################################### CI #################################
+#   # reading the data
+# # cssStyle needs ramps and ndr information
+# linThreshold = 66000
+# mode = "FAST"
+
+# a=cnH2rgRamps("data/calibrations/ciFocus2-GOSpinhole",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=10, ndr=5)
+# data = np.squeeze(a.read("fits",dtype=np.uint16))
+# # reading the background data
+# b=cnH2rgRamps("data/calibrations/ciFast5-masterBackgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=5)
+
+# backgroundDark=np.squeeze(b.read("fits",dtype=np.float32))
+
+# #%%
+# gainTable = in_im = fits.open("data/calibrations/ciMasterGain1.000.fits")[0].data.astype(np.float32)
+
+# changeThreshold = 0.0
+# #exact focus
+# oldFocus = -10.193
+# #within threshold
+# #oldFocus = -9.8
+# #outside threshold
+# #oldFocus = -9.
+# camera = "CI"
+
+# badPixels = fits.open("data/calibrations/ciBadPixels.000.fits")[0].data.astype(np.uint8)
+
+# beamMapping = None
+
+# #%%
+# # fig, ax=plt.subplots(num=1)
+# # im=plt.imshow(data[0,4])#, norm=LogNorm(vmin=100, vmax=10000))
+# # fig.colorbar(im)
+# # plt.show()
+# #%%
+
+# stagePositions = np.array([-9.2, -9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
+
+# newFocus, changeFlag = calFocus2(data,
+#                                     stagePositions,
+#                                     backgroundDark,
+#                                     gainTable,
+#                                     badPixels,
+#                                     oldFocus,
+#                                     mode,
+#                                     linThreshold,
+#                                     changeThreshold,
+#                                     camera,
+#                                     debug=False,
+#                                     logPath=None,
+#                                     simulateChange=False,
+#                                     writeToFile=False,
+#                                     path=None,
+#                                     sequenceName=None,
+#                                     fileFormat='fits')

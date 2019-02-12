@@ -11,15 +11,17 @@ from scipy.optimize import curve_fit
 from scipy import asarray as ar,exp
 from numpy.linalg import linalg
 
-siSpectrum = np.load("data/spectra/modulated-8-SiIX.npy")
-
+# siSpectrum = np.load("data/spectra/modulated-8-SiIX.npy")
+siVector = np.load("siWavelength.npy")
+siSpectrum = fits.open("data/spectra/siIX_spectrum_atmosphere.fits")[0].data.astype(np.float32)
 test = np.squeeze(siSpectrum[0,:])
-widths = np.array([20,15,10,5,1,6,11,16,21])
+widths = np.array([24,20,15,10,5,1,6,11,16,21])
+#%%
 result = np.zeros((len(widths),len(test)))
 for i in range(len(widths)):
   kernel = cnGauss(np.arange(-25,26),1,0,widths[i],0)
   result[i,:] = convolve(test,kernel,boundary='extend',normalize_kernel=True)
-np.save("data/spectra/defocused-9-SiIX.npy", result) 
+np.save("data/spectra/defocused-10-SiIX.npy", result) 
 #%%
 x = np.arange(2048)
 fig, ax=plt.subplots(num=1)

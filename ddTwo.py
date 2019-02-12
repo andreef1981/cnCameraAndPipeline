@@ -6,7 +6,7 @@ Created on Mon Oct  1 10:09:36 2018
 @author: Andre Fehlmann (afehlmann@nso.edu)
 Revision history
 ----------------
-
+  10 Feb 2019: - implement separate case for CI camera
 """
 
 import numpy as np
@@ -118,71 +118,121 @@ def ddTwo(data,
     except:
       print("data has been sorted\n")
     
-  
-  ################# 3. beam subtraction #######################################  
-  left = sortedData[:,:,:1024]
-  right = sortedData[:,:,1024:]
-  summ = (left+right)/2.
-  diff = (left-right)/2.
-  # reshaping so that matrix multiplication can be used
-  summ = np.reshape(summ,(8,2048*1024))
-  diff = np.reshape(diff, (8,2048*1024))
-  ################# 4. demodulation ###########################################  
-  recovI = np.matmul(demodMatrix[0,:,:],summ)
-  recovQUV = np.matmul(demodMatrix[1,:,:],diff)
-  
-  recovI = np.reshape(recovI,(4,2048,1024))
-  recovQUV = np.reshape(recovQUV,(4,2048,1024))
-  stokes = np.concatenate((recovI[0,:,:][None,],recovQUV[1:,:,:]))
-  waveVector = waveCal
-  
+  if camera == "SP":
+    ################# 3. beam subtraction #######################################  
+    left = sortedData[:,:,:1024]
+    right = sortedData[:,:,1024:]
+    summ = (left+right)/2.
+    diff = (left-right)/2.
+    # reshaping so that matrix multiplication can be used
+    summ = np.reshape(summ,(nrModulationStates,2048*1024))
+    diff = np.reshape(diff, (nrModulationStates,2048*1024))
+    ################# 4. demodulation ###########################################  
+    recovI = np.matmul(demodMatrix[0,:,:],summ)
+    recovQUV = np.matmul(demodMatrix[1,:,:],diff)
+    
+    recovI = np.reshape(recovI,(4,2048,1024))
+    recovQUV = np.reshape(recovQUV,(4,2048,1024))
+    stokes = np.concatenate((recovI[0,:,:][None,],recovQUV[1:,:,:]))
+    waveVector = waveCal
+    
+  elif camera == "CI":
+    temp = np.reshape(data,(nrModulationStates,2048*2048))
+    recov = np.matmul(demodMatrix,temp)
+    stokes = np.reshape(recov,(4,2048,2048))
+    waveVector = None
+    
   return np.float32(stokes), waveVector
   
 
-#
-## reading the data
-# cssStyle needs ramps and ndr information
-a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve-ddOne",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=1, ndr=8)
-data = np.squeeze(a.read("fits",dtype=np.float32))
+# # SP
+# ## reading the data
+# # cssStyle needs ramps and ndr information
+# a=cnH2rgRamps("data/coronalObs-sensitivity/spObserve-ddOne",
+#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=8)
+# data = np.squeeze(a.read("fits",dtype=np.float32))
 
-waveCal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-equal.000.fits")[0].data.astype(np.float32)
+# waveCal = fits.open("data/calibrations/spMasterWavecal.000.fits")[0].data.astype(np.float32)
 
-badPixels = fits.open("data/coronalObs-sensitivity/ciBadPixels.000.fits")[0].data.astype(np.uint8)
+# badPixels = fits.open("data/calibrations/spBadPixels.000.fits")[0].data.astype(np.uint8)
 
 
-######### run this after first part with first part commented
-modMode = "stepped"
-#modStates = np.arange(8)
+# ######### run this after first part with first part commented
+# modMode = "stepped"
+# #modStates = np.arange(8)
 
-modStates = np.array([3,4,5,6,7,0,1,2])
+# modStates = np.array([3,4,5,6,7,0,1,2])
 
-data = data[modStates,:,:]
+# data = data[modStates,:,:]
 
-mode = "SLOW"
-camera = "SP"
-#demodSum = np.load("data/spectra/demod-sum-8-SiIX.npy")
-#demodDiff = np.load("data/spectra/demod-diff-8-SiIX.npy")
-#demodMatrix = np.concatenate((demodSum[None,:,:],demodDiff[None,:,:]))
-#np.save("data/spectra/demod-8-SiIX.npy",demodMatrix)
-demodMatrix = np.load("data/spectra/demod-8-SiIX.npy")
+# mode = "SLOW"
+# camera = "SP"
 
-result, waveVector = ddTwo(data,
-                           modStates,
-                           modMode,
-                           demodMatrix,
-                           mode,
-                           badPixels,
-                           camera,
-                           waveCal=None,
-                           debug=False,
-                           logPath=None)
+# demodMatrix = np.load("data/spectra/demod-8-SiIX.npy")
 
-#fig, ax=plt.subplots()
-#plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
-fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
-ax1.imshow(result[0,:,:], vmin=0.,vmax=3000.)
-ax2.imshow(result[1,:,:], vmin=0.,vmax=200.)
-ax3.imshow(result[2,:,:], vmin=0.,vmax=200.)
-ax4.imshow(result[3,:,:], vmin=0.,vmax=20.)
+# result, waveVector = ddTwo(data,
+#                            modStates,
+#                            modMode,
+#                            demodMatrix,
+#                            mode,
+#                            badPixels,
+#                            camera,
+#                            waveCal=None,
+#                            debug=False,
+#                            logPath=None)
+
+# #fig, ax=plt.subplots()
+# #plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
+# fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+# ax1.imshow(result[0,:,:], vmin=0.,vmax=3000.)
+# ax2.imshow(result[1,:,:], vmin=0.,vmax=200.)
+# ax3.imshow(result[2,:,:], vmin=0.,vmax=200.)
+# ax4.imshow(result[3,:,:], vmin=0.,vmax=20.)
+  
+
+##########################################################################
+#   # CI
+# ## reading the data
+# # cssStyle needs ramps and ndr information
+# a=cnH2rgRamps("data/coronalObs-sensitivity/ciObserve-ddOne",
+#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=8)
+# data = np.squeeze(a.read("fits",dtype=np.float32))
+
+# waveCal = None
+
+# badPixels = fits.open("data/calibrations/ciBadPixels.000.fits")[0].data.astype(np.uint8)
+
+
+# ######### run this after first part with first part commented
+# modMode = "stepped"
+# #modStates = np.arange(8)
+
+# modStates = np.array([3,4,5,6,7,0,1,2])
+
+# data = data[modStates,:,:]
+
+# mode = "SLOW"
+# camera = "CI"
+
+# demodMatrix = np.load("data/spectra/demod-8-SiX-CI.npy")
+
+# result, waveVector = ddTwo(data,
+#                            modStates,
+#                            modMode,
+#                            demodMatrix,
+#                            mode,
+#                            badPixels,
+#                            camera,
+#                            waveCal=None,
+#                            debug=False,
+#                            logPath=None)
+# #%%
+# #fig, ax=plt.subplots()
+# #plt.imshow(data[0]-data[-1], vmin=0.,vmax=40000.)
+# fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2,2)
+# ax1.imshow(result[0,:,:], vmin=0.,vmax=8000.)
+# ax2.imshow(result[1,:,:], vmin=0.,vmax=200.)
+# ax3.imshow(result[2,:,:], vmin=-200.,vmax=200.)
+# ax4.imshow(result[3,:,:], vmin=-20.,vmax=20.)

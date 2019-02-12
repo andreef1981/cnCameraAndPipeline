@@ -166,5 +166,5 @@ for i in range(len(names)):
 #%%
 
 np.save("data/spectra/modulated-8-9pos-contextImager.npy", allObs)
-
+np.save("data/spectra/demod-8-SiX-CI.npy",demod)
 

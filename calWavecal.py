@@ -123,7 +123,7 @@ def calWavecal(data,
   ################# 2. reference pixel correction #############################
    #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
   # needed for slow mode only?
-  if mode is "SLOW":
+  if mode == "SLOW":
     #do something
     data = data
     
@@ -151,7 +151,7 @@ def calWavecal(data,
   if len(data.shape)==4:
     gainCorrected = np.average(gainCorrected, axis=0)
   # for slow mode signal is inverted
-  if mode is "SLOW":
+  if mode == "SLOW":
     result = gainCorrected[0,:,:] - gainCorrected[-1,:,:]
   else:
     result = gainCorrected[-1,:,:] - gainCorrected[0,:,:]
@@ -239,44 +239,39 @@ def calWavecal(data,
   
   return newWavecal, changeFlag
 
-
+# #%%
 # # reading the data
 # # cssStyle needs ramps and ndr information
-# linThreshold = 0
-# mode = "SLOW"
+# linThreshold = 66000
+# mode = "FAST"
 
-# a=cnH2rgRamps("data/coronalObs-sensitivity/spWavecal175um",
-#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#               ramps=3, ndr=2)
+# a=cnH2rgRamps("data/calibrations/spWavecal",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=10, ndr=5)
 # data = np.squeeze(a.read("fits",dtype=np.uint16))
 # # reading the background data
-# b=cnH2rgRamps("data/coronalObs-sensitivity/spBackgroundDark",
-#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#               ramps=3, ndr=2)
+# b=cnH2rgRamps("data/calibrations/spFast5-masterBackgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=5)
 
-# dark=b.read("fits",dtype=np.uint16)
-# backgroundDark= calBackgroundDark(dark,
-#                                     linThreshold,
-#                                     mode,
-#                                     debug=False,
-#                                     logPath=None,
-#                                     writeToFile=False)
+# backgroundDark=b.read("fits",dtype=np.float32)
 
-# gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+# gainTable = fits.open("data/calibrations/spMasterGain3.000.fits")[0].data.astype(np.float32)
 
-# oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-equal.000.fits")[0].data.astype(np.float32)
-# # oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
+# oldWavecal = fits.open("data/calibrations/spMasterWavecal-equal.000.fits")[0].data.astype(np.float32)
+# # oldWavecal = fits.open("data/calibrations/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
 
-# badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
+# badPixels = fits.open("data/calibrations/spBadPixels.000.fits")[0].data.astype(np.uint8)
 
-# c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
+# c=cnH2rgRamps("data/calibrations/spBeamMapping",
 #               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
 #               ramps=1, ndr=2)
 # beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
 
+# #%%
 # fileFormat = "both"
-# filePath = "data/coronalObs-sensitivity/"
-# sequenceName = "spObserve-ddOneProcessed"
+# filePath = "data/calibrations/"
+# sequenceName = "spMasterWavecal-plus10.000"
 # gratingPosition = 60.96132140227516
 # expectedDispersion=0.0174347
 # slit="175um"
@@ -297,16 +292,16 @@ def calWavecal(data,
 #                                     changeThreshold,
 #                                     debug=False,
 #                                     logPath=None,
-#                                     simulateChange=False,
+#                                     simulateChange=True,
 #                                     writeToFile=False,
-#                                     path=None,
-#                                     sequenceName=None,
+#                                     path=filePath,
+#                                     sequenceName=sequenceName,
 #                                     fileFormat='fits')
 
 
 #%%
 # fig, ax=plt.subplots()
-# ax.plot(a,b,)#a,c,'r')
+# ax.imshow(data[0,4,:,:])
 
 # from matplotlib.ticker import FormatStrFormatter
 # # fig, ax=plt.subplots()

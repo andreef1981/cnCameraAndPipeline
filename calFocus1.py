@@ -14,7 +14,7 @@ import numpy as np
 from helperFunctions import *
 from astropy.io import fits
 from cnPipeline import *
-from calBackgroundDark import *
+# from calBackgroundDark import *
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
@@ -115,7 +115,7 @@ def calFocus1(data,
   ################# 2. reference pixel correction #############################
    #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
   # needed for slow mode only?
-  if mode is "SLOW":
+  if mode == "SLOW":
     #do something
     data = data
     
@@ -143,7 +143,7 @@ def calFocus1(data,
   # if len(data.shape)==4:
   #   gainCorrected = np.average(gainCorrected, axis=0)
   # for slow mode signal is inverted
-  if mode is "SLOW":
+  if mode == "SLOW":
     result = gainCorrected[:,0,:,:] - gainCorrected[:,-1,:,:]
   else:
     result = gainCorrected[:,-1,:,:] - gainCorrected[:,0,:,:]
@@ -162,12 +162,52 @@ def calFocus1(data,
     
   if slit =="175um":
     # long slit should be covered by spectrum
-    spatialPeaks = 1024
-    spatialWidths = 1024
+    spatialPeaks = np.array([1024])
+    spatialWidths = np.array([1024])
     avLeft = np.zeros(result.shape[0],dtype=np.float16())
     avRight = np.zeros(result.shape[0],dtype=np.float16())
     for i in range(result.shape[0]):
-      print(np.mean(result[i,:1024,:]),np.max(result[i,:,:]))
+      # print(np.mean(result[i,:1024,:]),np.max(result[i,:,:]))
+      # left side
+      spectralPeaks, leftProfile = cnFindSpectralPeaks(result[i,:,:],
+                                        [2,100],
+                                        spatialPeaks,
+                                        spatialWidths,
+                                        [0,1024],
+                                        [100, 0.9*np.max(-1*result[i,:1024,:])-np.mean(-1*result[i,:1024,:])],
+                                        [np.mean(-1*result[i,:1024,:]),0],
+                                        invert=True)
+      avLeft[i] = np.mean(spectralPeaks[0][1])
+      # right side
+      spectralPeaks, rightProfile = cnFindSpectralPeaks(result[i,:,:],
+                                        [2,100],
+                                        spatialPeaks,
+                                        spatialWidths,
+                                        [1024,2048],
+                                        [100, 0.9*np.max(-1*result[i,1024:,:])-np.mean(-1*result[i,1024:,:])],
+                                        [np.mean(-1*result[i,1024:,:]),0],
+                                        invert=True)
+      avRight[i] = np.mean(spectralPeaks[0][1])
+    if debug:
+      print(avLeft,avRight)
+    
+    #TODO: use both sides to determine best focus
+    # fit quadratic function to line width values
+    parLeft = np.polyfit(stagePosition,np.float64(avLeft),2)
+    hr = np.arange(np.min(stagePosition),np.max(stagePosition),0.001)
+    fitterLeft = np.polyval(parLeft,hr)
+    indLeft = np.argmin(fitterLeft)
+    
+    newFocus = hr[indLeft]
+    
+  if slit =="pinholeMask":
+    # long slit should be covered by spectrum
+    spatialPeaks = np.array([1024])
+    spatialWidths = np.array([1024])
+    avLeft = np.zeros(result.shape[0],dtype=np.float16())
+    avRight = np.zeros(result.shape[0],dtype=np.float16())
+    for i in range(result.shape[0]):
+      # print(np.mean(result[i,:1024,:]),np.max(result[i,:,:]))
       # left side
       spectralPeaks, leftProfile = cnFindSpectralPeaks(result[i,:,:],
                                         [2,100],
@@ -225,44 +265,42 @@ def calFocus1(data,
 
 # # reading the data
 # # cssStyle needs ramps and ndr information
-# linThreshold = 0
-# mode = "SLOW"
+# linThreshold = 66000
+# mode = "FAST"
 
-# a=cnH2rgRamps("data/coronalObs-sensitivity/spFocus1-175um.",
-#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-#               ramps=9, ndr=5)
+# a=cnH2rgRamps("data/calibrations/spFocus1-pinholeMask",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=10, ndr=5)
 # data = np.squeeze(a.read("fits",dtype=np.uint16))
 # # reading the background data
-# b=cnH2rgRamps("data/coronalObs-sensitivity/spFocus-masterBackground",
-#               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
+# b=cnH2rgRamps("data/calibrations/spFast5-masterBackgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
 #               ramps=1, ndr=5)
 
 # backgroundDark=np.squeeze(b.read("fits",dtype=np.float32))
 
 # #%%
-# gainTable = in_im = fits.open("data/coronalObs-sensitivity/spMasterGain3.000.fits")[0].data.astype(np.float32)
+# gainTable = in_im = fits.open("data/calibrations/spMasterGain3.000.fits")[0].data.astype(np.float32)
 
 # changeThreshold = 0.5
 # #exact focus
 # oldFocus = -10.188
-# #within threshold
+# #within thresholdast5
 # # oldFocus = -9.8
 # #outside threshold
 # # oldFocus = -9.
 
-# oldWavecal = fits.open("data/coronalObs-sensitivity/spMasterWavecal-plus10.000.fits")[0].data.astype(np.float32)
+# badPixels = fits.open("data/calibrations/spBadPixels.000.fits")[0].data.astype(np.uint8)
 
-# badPixels = fits.open("data/coronalObs-sensitivity/spBadPixels.000.fits")[0].data.astype(np.uint8)
-
-# c=cnH2rgRamps("data/coronalObs-sensitivity/spBeamMapping",
+# c=cnH2rgRamps("data/calibrations/spBeamMapping",
 #               "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
 #               ramps=1, ndr=2)
 # beamMapping = np.squeeze(c.read("fits",dtype=np.float32))
 
 # #%%
-# slit="175um"
+# slit="pinholeMask"
 
-# stagePositions = np.array([-9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
+# stagePositions = np.array([-9.2, -9.4, -9.6, -9.8, -10., -10.2, -10.4, -10.6, -10.8, -11.])
 
 # newFocus, changeFlag = calFocus1(data,
 #                                     stagePositions,

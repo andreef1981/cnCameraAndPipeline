@@ -69,11 +69,12 @@ def logStepAlign3(centerWavelength,
                              (2. * np.cos(-1.*np.radians(theta))) ) ) - theta
 #  alpha = np.degrees( np.arcsin((1e-6*blorder*n*centerWavelength) -
 #                               (np.sin(np.radians(beta))) ) )
+  #TODO: Check units on linear dispersion
   dlamdx = (1e3*np.cos(np.radians(beta))) / (blorder*n*Lb)
   rangeArray =  dlamdx*pixel_size*spectral_pixels
 #  gratingAngle = alpha-(alpha-beta)/2.
 #  gratingAngle = beta + theta
-  
+  # print('dlamdx [um/um]', dlamdx, 'per pixel', dlamdx*pixel_size)
   
   maxW = centerWavelength+ fraction*rangeArray
   minW = centerWavelength- fraction*rangeArray
@@ -83,6 +84,7 @@ def logStepAlign3(centerWavelength,
                              (2. * np.cos(-1.*np.radians(theta))) ) ) - theta
   maxGratingAngle = maxBeta + theta
   minGratingAngle = minBeta + theta
+  # print('min, max', minW, maxW, minGratingAngle, maxGratingAngle)
   
   t = np.arange(nrSteps)
   exSum = 0
@@ -97,11 +99,11 @@ def logStepAlign3(centerWavelength,
   
   for i in np.arange(1,nrSteps+1):
     angle[i] = angle[i-1] + stepScaling*np.exp(growthFactor*t[i-1])
-  
+    # print((stepScaling*np.exp(growthFactor*t[i-1]))/(dlamdx*pixel_size))
     
   return np.float32(angle)
 
-#a = logStepAlign3(1083.,5,0.1)
+a = logStepAlign3(3934.3,10,fraction=1)
 #print(a)
 #fig, ax=plt.subplots()
 #ax.plot(a)

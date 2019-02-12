@@ -11,8 +11,8 @@ Revision history
   - rename the function to match others
   - add inputs: stage position, dark, badPixels, threshold, simulateChange
   - add ouputs: changeFlag
-24 September 2018:
-  - 
+11 Februar 2019:
+  - linearity corretion uses function from helper libary now
     
 """
 import numpy as np
@@ -122,7 +122,7 @@ def calGain3(data,
   ################# 2. reference pixel correction #############################
    #TODO: reference pixel correction should be done prior to averaging. Need to check when and if to do it.
   # needed for slow mode only?
-  if mode is "SLOW":
+  if mode == "SLOW":
     #do something
     data = data
     
@@ -134,35 +134,10 @@ def calGain3(data,
     
   
   ################# 3. make the linearity correction ##########################  
-  
-  # in this case we use the NDR number as our 'time' axis
-  dataTime = np.arange(data.shape[1])
-  
-  if mode is not "SLOW":
-    # fast mode does not use the first frame
-    data = data[:,1:,:,:]
-    # time vector is shorter but must maintain the values
-    dataTime = dataTime[1:]
-  
-  linearityCorrected = np.zeros(data.shape,dtype=np.float32)
-  # need to loop to use cnPolyfit
-  
-  # Check for order of correction
-  if len(dataTime) == 2:
-    order = 1
-  elif len(dataTime) > 2:
-    order = 2
+  if len(data.shape)==4:
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=True)
   else:
-    raise ValueError("sequence to short to apply polyfit")
-    
-  for i in np.arange(data.shape[0]):
-    # Do quadratic fit, use data up to threshold
-    coef = cnPolyfit(np.squeeze(data[i,:,:,:]), order, mode, linThreshold)
-    if order == 2:
-      nonLinear = np.multiply(coef[0,:,:],dataTime[:,None,None]**2.)
-      linearityCorrected[i,:,:,:] = data[i,:,:,:] - nonLinear
-    else:
-      linearityCorrected[i,:,:,:] = data[i,:,:,:]
+    linearityCorrected=cnNonLinearityCorrection(data,mode,linThreshold,multiRamp=False)
   
     
   ################# 4. subtract the background ################################  
@@ -171,9 +146,12 @@ def calGain3(data,
   
   ################# 5. make the gain table ####################################
   temp = np.mean(backgroundSubtracted,axis=0)
-  gainTable = 1/(temp[-1,:,:]/np.mean(temp[-1,:,:]))
+  gainTable = (temp[-1,:,:]/np.median(temp[-1,:,:]))
+  # mitigate divide by 0 issue
+  gainTable[gainTable==0] = 1e-15
+  gainTable = 1/gainTable
   #TODO: fix for some very large gains... should be taken care by bad pixels?
-  gainTable = np.where(np.abs(gainTable) > 50, 0, gainTable)
+  gainTable = np.where(np.abs(gainTable) > 10, 0, gainTable)
   
   if debug:
     try:
@@ -204,44 +182,81 @@ def calGain3(data,
     newGain = gainTable
     changeFlag = False
   
+  #TODO: Don't know how to compare yet for change. Set change flat always True
+  changeFlag = True
+  
   return newGain, changeFlag
 
-### reading the data
-## cssStyle needs ramps and ndr information
-a=cnH2rgRamps("data/coronalObs-sensitivity/spMasterBackgroundDark",
-              "fits",readMode="SLOW",subArray=None,verbose=True, cssStyle=True,
-              ramps=1, ndr=2)
-dark = np.squeeze(a.read("fits",dtype=np.uint16))
+# ### reading the data
+# ## cssStyle needs ramps and ndr information
+# linThreshold = 66000
+# mode = "FAST"
+# a=cnH2rgRamps("data/calibrations/spFast5-masterBackgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=5)
+# dark = np.squeeze(a.read("fits",dtype=np.uint16))
 
-b=cnH2rgRamps("data/coronalObs-sensitivity/spGain3",
-              "fits",readMode="SLOW",subArray=None,verbose=True,cssStyle=True,
-              ramps=3, ndr=2)
-data=b.read("fits",dtype=np.uint16)
+# b=cnH2rgRamps("data/calibrations/spGain3",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=5)
+# data=b.read("fits",dtype=np.uint16)
 
 
+# stagePosition = np.arange(3)
+# badPixels = np.zeros((2048,2048),dtype="uint8")
+# oldGain = np.ones((2048,2048),dtype="float32")
 
-linThreshold = 0
-mode = "SLOW"
-stagePosition = np.arange(3)
-badPixels = np.zeros((2048,2048),dtype="uint8")
-oldGain = np.ones((2048,2048),dtype="float32")
-
-c,flag= calGain3(data,
-            stagePosition,
-            dark,
-            badPixels,
-            oldGain,
-            linThreshold,
-            mode,
-            changeThreshold=None,
-            simulateChange=False,
-            debug=True,
-            logPath=None,
-            writeToFile=True,
-            filePath="data/coronalObs-sensitivity/",
-            sequenceName="spMasterGain3",
-            fileFormat="both")
+# c,flag= calGain3(data,
+#                  stagePosition,
+#                  dark,
+#                  badPixels,
+#                  oldGain,
+#                  linThreshold,
+#                  mode,
+#                  changeThreshold=None,
+#                  simulateChange=False,
+#                  debug=True,
+#                  logPath=None,
+#                  writeToFile=True,
+#                  filePath="data/calibrations/",
+#                  sequenceName="spMasterGain3",
+#                  fileFormat="both")
   
-fig, ax=plt.subplots()
-plt.imshow(c,vmin=0.9, vmax=1.1)
-plt.show()
+# ### reading the data
+# ## cssStyle needs ramps and ndr information
+# linThreshold = 0
+# mode = "SLOW"
+# a=cnH2rgRamps("data/calibrations/spSlow2-masterBackgroundDark",
+#               "fits",readMode=mode,subArray=None,verbose=True, cssStyle=True,
+#               ramps=1, ndr=2)
+# dark = np.squeeze(a.read("fits",dtype=np.uint16))
+
+# b=cnH2rgRamps("data/calibrations/spGain3-slow",
+#               "fits",readMode=mode,subArray=None,verbose=True,cssStyle=True,
+#               ramps=3, ndr=2)
+# data=b.read("fits",dtype=np.uint16)
+
+
+# stagePosition = np.arange(3)
+# badPixels = np.zeros((2048,2048),dtype="uint8")
+# oldGain = np.ones((2048,2048),dtype="float32")
+
+# c,flag= calGain3(data,
+#                   stagePosition,
+#                   dark,
+#                   badPixels,
+#                   oldGain,
+#                   linThreshold,
+#                   mode,
+#                   changeThreshold=None,
+#                   simulateChange=False,
+#                   debug=True,
+#                   logPath=None,
+#                   writeToFile=True,
+#                   filePath="data/calibrations/",
+#                   sequenceName="spMasterGain3-slow",
+#                   fileFormat="both")
+  
+# fig, ax=plt.subplots()
+# plt.imshow(c,vmin=0.9, vmax=1.1)
+# plt.show()
