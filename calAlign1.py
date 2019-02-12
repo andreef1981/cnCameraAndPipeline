@@ -341,21 +341,21 @@ def calAlign1(data,
   return newAlignFM1A, newAlignFM1B, newStepSizeFM1A, newStepSizeFM1B,\
          newRotationFM1A, newRotationFM1B, changeFlag
 
-# #%%
-# # spectrograph 0 order
-# xscale = 8.3333 #pixel/arcsec
-# yscale = 8.3333 #pixel/arcsec
-# givenX = np.arange(-19, 20, 4)
-# givenY = np.arange(-110, 120, 45)
+#%%
+# spectrograph 0 order
+xscale = 8.3333 #pixel/arcsec
+yscale = 8.3333 #pixel/arcsec
+givenX = np.arange(-19, 20, 4)
+givenY = np.arange(-110, 120, 45)
 
-# # raster type scanning
-# stagePositionFM1A = np.zeros([givenX.size*givenY.size])
-# stagePositionFM1B = np.zeros([givenX.size*givenY.size])
-# for i in range(len(givenY)):
-#   for j in range(len(givenX)):
+# raster type scanning
+stagePositionFM1A = np.zeros([givenX.size*givenY.size])
+stagePositionFM1B = np.zeros([givenX.size*givenY.size])
+for i in range(len(givenY)):
+  for j in range(len(givenX)):
 
-#     stagePositionFM1A[i*len(givenX)+j] = givenX[j]
-#     stagePositionFM1B[i*len(givenX)+j] = givenY[i]
+    stagePositionFM1A[i*len(givenX)+j] = givenX[j]
+    stagePositionFM1B[i*len(givenX)+j] = givenY[i]
 # #%%    
 # # reading the data
 # # cssStyle needs ramps and ndr information
@@ -395,7 +395,7 @@ def calAlign1(data,
 
 # newAlignFM1A, newAlignFM1B, newStepSizeFM1A,\
 # newStepSizeFM1B, newRotationFM1A,\
-# newRotationFM1B, changeFlag = calAlign1(data[:100,:,:,:],
+# newRotationFM1B, changeFlag = calAlign1(data[:,:,:,:],
 #                                         stagePositionFM1A[:],
 #                                         stagePositionFM1B[:],
 #                                         camera,

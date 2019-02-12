@@ -10,7 +10,7 @@ helper library
 import numpy as np  # Fast numeric arrays/matrices (FITS files imported as numpy matrices)
 from scipy.signal import find_peaks
 from scipy import exp
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 def inversematrices(data):
     # From Kathleen Tatem
